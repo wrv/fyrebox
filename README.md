@@ -1,4 +1,5 @@
-fyrebox
+FyreBox
 =======
+{natnaelg, mchlljy, ogutu, wrv}@mit.edu
 
-Encrypted file system
+FyreBox is an encrypted file system for 6.858. 
