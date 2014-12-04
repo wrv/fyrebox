@@ -7,17 +7,21 @@ Public Keys for all users.
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 
-# create in-memory db
+# create in-memory db -- testing
 engine = create_engine('sqlite:///:memory:', echo=True) # TODO: config file ?
 
 Base = declarative_base()
 class PublicKey(Base):
-    __tablename__ = 'pks'
-
-    id = Column(Integer, primary_key=True)
+    """ Stores a user's public key
+            username : user's username
+            pk : user's public key
+    """
     # TODO: add VARCHAR length for non-sqlite dbs e.g Column(String(50))
+
+    __tablename__ = 'pks'
+    id = Column(Integer, primary_key=True)
     username = Column(String)
-    pk = Column(String) # raw public key value
+    pk = Column(String)
 
     def __repr__(self):
         return "<User(id='%d', username='%s', pk='%s')>" % (
@@ -25,6 +29,6 @@ class PublicKey(Base):
 
 
 if not engine.dialect.has_table(engine.connect(), "pks"):
-    # install PublicKey table
+    # install PublicKey table if it does not exist
     Base.metadata.create_all(engine)
 
