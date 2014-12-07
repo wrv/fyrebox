@@ -1,6 +1,5 @@
-#!/usr/bin/env python
-
 import os
+
 from sqlalchemy import create_engine, ForeignKey
 from sqlalchemy import Column, Date, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
@@ -60,7 +59,7 @@ def permission_setup():
 
 
 if __name__ == '__main__':
-	cmd = raw_input('Recreate DB? (y/n) ')
+    cmd = raw_input('Recreate DB? (y/n) ')
     if cmd == 'y':
         user_setup()
         file_setup()

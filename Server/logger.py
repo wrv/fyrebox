@@ -1,6 +1,18 @@
 import logging
+from datetime import *
 
-logging.basicConfig(filename='events.log',level=logging.DEBUG)
-logging.debug('This message should go to the log file')
-logging.info('So should this')
-logging.warning('And this, too')
+#initalizes the file for the log
+def main():
+	logging.basicConfig(filename='events.log',level=logging.DEBUG)
+	#log('testing the logger')
+
+
+def log(string):
+	time =  datetime.now().isoformat(' ')
+	logging.info(string + ' -- %s' % (time))
+
+
+
+#start logging
+if __name__ == '__main__':
+    main()
