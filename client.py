@@ -12,10 +12,10 @@ class File:
 			return 0
 		return -1
 class WriteError(Exception):
-	def __init__(self, value):
-		self.value = value
-	def __str__(self):
-		return repr(self.value)
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
 
 def main():
 	while(1):
