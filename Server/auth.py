@@ -11,11 +11,20 @@ def newtoken(db, person):
     db.commit()
     return person.token
 
+##
+# login(username, password)
+# 
+# username - The username of the user
+# password - The password of the user
+#
+# Looks up the pair in the password database (after hashing 
+# the password with the salt). Then creates the token to send
+# back to the user.
+# 
 def login(username, password):
     db = user_setup()
     person = db.query(User).get(username)
 
-    #We will allow people to know which users exist, so we allow this timing attack
     if not person:
         return None
 
@@ -26,6 +35,15 @@ def login(username, password):
     else:
         return None
 
+##
+# register(username, password)
+# 
+# username - The username of the user
+# password - The password of the user
+#
+# Creates a new entry in the login database and creates
+# the token like in login
+#
 def register(username, password):
     db = user_setup()
     person = db.query(User).get(username)

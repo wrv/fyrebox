@@ -1,13 +1,15 @@
-import socket
-import ssl
-import json
+import socket, ssl, json
+
 import auth
+import fileops
+import dirops
 import logging
 
-#code used from here: http://carlo-hamalainen.net/blog/2013/1/24/python-ssl-socket-echo-test-with-self-signed-certificate
 
 AUTHOPS = ['register', 'login']
-FILEOPS = ['create', 'delete', 'read', 'write', 'rename']
+FILEOPS = ['create', 'delete', 'read', 'write', 'rename', 'perm']
+DIROPS = ['createdir', 'deletedir', 'readdir', 'writedir', 'renamedir', 'permdir']
+
 def do_something(connstream, data):
     print "do_something:", data
     return False
@@ -17,7 +19,10 @@ def handleconnection(connstream):
     while data:
         data = connstream.read()
         pdata = json.load(data)
-        if pdata
+        if pdata['op'] in AUTHOPS:
+            authop = pdata['op']
+            if 'register' == authop:
+
 
 
 bindsocket = socket.socket()
