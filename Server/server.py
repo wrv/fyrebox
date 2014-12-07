@@ -1,5 +1,14 @@
-import socket, ssl, auth, logging
+import socket, ssl, json
 
+import auth
+import fileops
+import dirops
+import logging
+
+
+AUTHOPS = ['register', 'login']
+FILEOPS = ['create', 'delete', 'read', 'write', 'rename', 'perm']
+DIROPS = ['createdir', 'deletedir', 'readdir', 'writedir', 'renamedir', 'permdir']
 
 def do_something(connstream, data):
     print "do_something:", data
@@ -8,9 +17,12 @@ def do_something(connstream, data):
 def handleconnection(connstream):
     data = connstream.read()
     while data:
-        if not do_something(connstream, data):
-            break
         data = connstream.read()
+        pdata = json.load(data)
+        if pdata['op'] in AUTHOPS:
+            authop = pdata['op']
+            if 'register' == authop:
+
 
 
 bindsocket = socket.socket()

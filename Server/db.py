@@ -15,9 +15,10 @@ PermissionBase = declarative_base()
 
 class User(UserBase):
 	__tablename__ = "user"
-	id = Column(Integer, primary_key=True)
-	username = Column(String, unique=True)
+	#id = Column(Integer, primary_key=True)
+	username = Column(String, unique=True, primary_key=True)
 	password = Column(String(128))
+	salt = Column(String(128))
 	token = Column(String(128))
 
 	#need to setup init and refr methods
@@ -28,7 +29,6 @@ class File(FileBase):
 	filename = Column(String(128))
 	owner_id = Column(ForeignKey('user.id'))
 	content = Column(String)
-	key = Column(String)
 
 	#need to setup init and refr methods
 
