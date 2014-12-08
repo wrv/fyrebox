@@ -7,9 +7,9 @@ def main():
 	#log('testing the logger')
 
 
-def log(string):
+def log(msg):
 	time =  datetime.now().isoformat(' ')
-	logging.info(string + ' -- %s' % (time))
+	logging.info(msg + ' -- %s' % (time))
 
 
 
