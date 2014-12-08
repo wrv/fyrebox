@@ -27,7 +27,7 @@ class File(FileBase):
 	__tablename__ = "file"
 	id = Column(Integer, primary_key=True)
 	filename = Column(String(128))
-	owner_id = Column(ForeignKey('user.id'))
+	owner_id = Column(String(128))
 	content = Column(String)
 
 	#need to setup init and refr methods
@@ -35,8 +35,8 @@ class File(FileBase):
 class Permission(PermissionBase):
 	__tablename__ = "permission"
 	id = Column(Integer, primary_key=True)
-	file_id = Column(ForeignKey('file.id'))
-	user_id = Column(ForeignKey('user.id'))
+	file_id = Column(String(128))
+	user_id = Column(String(128))
 	perm_type = Column(Integer) # max should be 7 and min should be 1
 
 	#need to setup init and refr methods
@@ -60,11 +60,11 @@ def permission_setup():
 
 
 if __name__ == '__main__':
-	cmd = raw_input('Recreate DB? (y/n) ')
-    if cmd == 'y':
-        user_setup()
-        file_setup()
-        permission_setup()
-    else:
-    	raise Exception("unknown command %s" % cmd)
+	cmd = raw_input('Recreate DB? (y/n)')
+	if cmd == 'y':
+		user_setup()
+		file_setup()
+		permission_setup()
+	else:
+		raise Exception("unknown command %s" % cmd)
 
