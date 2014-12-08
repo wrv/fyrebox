@@ -65,7 +65,7 @@ def write(fileName, content, username, token):
 		return False
 
 ##
-# rename(oldName, newName, username, token)
+# rename(oldname, newName, username, token)
 #
 # oldName - the encrypted name of the file we want to rename
 # newName - the new encrypted title we want to give a file
