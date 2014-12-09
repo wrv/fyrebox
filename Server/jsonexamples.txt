@@ -1,0 +1,5 @@
+{"operation": "register", "username": "ranchdressing", "password": "password1"}
+
+{"operation": "login", "username": "ranchdressing", "password": "password1"}
+
+{"operation": "create", "username": "ranchdressing", "token": "09047b3e94456b82d0e32323de0b6f5e", "filename":"lol"}

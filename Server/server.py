@@ -5,11 +5,15 @@ from twisted.protocols.basic import LineReceiver
 from twisted.internet import reactor, ssl
 from twisted.python.modules import getModule
 
-import auth
+from auth import login, register
 import fileops
 import dirops
 import log_client
 
+##
+# To Do:
+#  - change the prints to logs
+#  - rpc the auth
 
 AUTHOPS = ['register', 'login']
 FILEOPS = ['create', 'delete', 'read', 'write', 'rename', 'perm']
@@ -21,7 +25,7 @@ class FileServer(LineReceiver):
         self.state = "UNAUTHENTICATED"
 
     def connectionMade(self):
-        self.sendLine("Connected")
+        self.sendLine('{"message":"connected"}')
 
     def connectionLost(self, reason):
         pass
@@ -59,6 +63,7 @@ class FileServer(LineReceiver):
             response = {}
             response['username'] = parsedjson['username']
             response['token'] = token
+            response['timestamp'] = time.time()
             self.sendLine(json.dumps(response))
             self.state = "AUTHENTICATED"
         else:
@@ -78,8 +83,13 @@ class FileServer(LineReceiver):
             self.sendLine('{"message":"failure"}')
             return
 
-        username = parsedjson['username']
-        token = parsedjson['token']
+        try:
+            username = parsedjson['username']
+            token = parsedjson['token']
+        except:
+            print "error in json. msg: " + message
+            return
+            
         #for organizational structure
         if op in FILEOPS:
             filename = parsedjson['filename']
@@ -144,7 +154,6 @@ class FileServer(LineReceiver):
 
 
 class FileServerFactory(Factory):
-
     def __init__(self):
         self.users = {} # maps user names to Chat instances
 
@@ -155,33 +164,3 @@ certData = getModule(__name__).filePath.sibling('server.pem').getContent()
 certificate = ssl.PrivateCertificate.loadPEM(certData)
 reactor.listenSSL(10023, FileServerFactory(), certificate.options())
 reactor.run()
-
-# def do_something(connstream, data):
-#     print "do_something:", data
-#     return False
-
-# def handleconnection(connstream):
-#     data = connstream.read()
-#     while data:
-#         data = connstream.read()
-#         pdata = json.load(data)
-#         if pdata['op'] in AUTHOPS:
-#             authop = pdata['op']
-#             if 'register' == authop:
-#                 pass
-
-
-# bindsocket = socket.socket()
-# bindsocket.bind(('localhost', 10023))
-# bindsocket.listen(5)
-
-# while True:
-#     newsocket, fromaddr = bindsocket.accept()
-#     connstream = ssl.wrap_socket(newsocket, server_side=True, certfile="certs/server.crt", keyfile="certs/server.key")
-#     try:
-#         t = threading.Thread(target=handleconnection, args=connstream)
-#         t.daemon = True
-#         t.start()
-#     finally:
-#         connstream.shutdown(socket.SHUT_RDWR)
-#         connstream.close()
