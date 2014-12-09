@@ -87,14 +87,16 @@ def decrypt(content, key):
 	decoded = DecodeAES(cipher, encryption)
 	print decoded
 def login():
-	print "$ Type 1 to register, 2 to login"
-	cmd = raw_input("$ ")
-	s_ = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	s = ssl.wrap_socket(s_, ca_certs='/usr/local/lib/python2.7/dist-packages/requests/cacert.pem', cert_reqs=ssl.CERT_REQUIRED)
-	s.connect(('18.189.121.235', 10023))
-	s.write("poop")
-	s.write("hehehe")
-	
+    print "$ Type 1 to register, 2 to login"
+    cmd = raw_input("$ ")
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect(('localhost', 10023))
+    sslSocket = socket.ssl(s)
+    while 1:
+        sslSocket.write("poop")
+        sslSocket.write("hehehe")
+        d = sslSocket.read()
+        print d	
 
 	
 if __name__ == "__main__":
