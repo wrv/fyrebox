@@ -6,7 +6,8 @@ import auth
 class LogRpcServer(rpclib.RpcServer):
     
     def rpc_log(self, msg, username, token):
-    	logger.log(msg)
+    	if auth.check_token(username, token):
+    		logger.log(msg)
 
 
 
