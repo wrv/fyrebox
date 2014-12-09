@@ -1,4 +1,4 @@
-import logging
+import log_client
 
 ##
 # createdir(dirName, username, token)
@@ -11,7 +11,7 @@ import logging
 # responds with a success/failure based on if the directory already exists
 #
 def createdir(dirName, username, token):
-	pass
+	return False
 
 ##
 # deletedir(dirName, username, token)

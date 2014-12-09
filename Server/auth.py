@@ -6,7 +6,7 @@ import random
 import pbkdf2
 
 def newtoken(db, person):
-    hashinput = "%s%s" % (person.password, os.urandom(10))
+    hashinput = '%s%.10f' % (person.password, random.random())
     person.token = hashlib.md5(hashinput).hexdigest()
     db.commit()
     return person.token
@@ -49,6 +49,7 @@ def register(username, password):
     person = db.query(User).get(username)
 
     if person:
+    	print username + " person exists"
         return None
 
     newperson = User()

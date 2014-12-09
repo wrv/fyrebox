@@ -1,4 +1,4 @@
-import logging
+import log_client
 from db import *
 from auth import check_token
 
@@ -16,9 +16,24 @@ def create(fileName, username, token):
 	if not check_token(username, token):
 		return False
 	filedb = file_setup()
+	permdb = permission_setup()
+
+	#create the file
 	newfile = File()
 	newfile.filename = fileName
-	newfile.owner_id = 5
+	newfile.owner_id = 0
+	newfile.content = ""
+
+	#create the permissions for the file
+	newperm = Permission()
+	newperm.filename = fileName
+	newperm.users_read.add(username)
+	newperm.users_write.add(username)
+
+	filedb.add(newfile)
+	filedb.commit()
+	permdb.add(newperm)
+	permdb.commit()
 
 	return True
 
@@ -35,6 +50,21 @@ def create(fileName, username, token):
 def delete(fileName, username, token):
 	if not check_token(username, token):
 		return False
+	#check permissions
+	permdb = permission_setup()
+	permfile = permdb.query(Permission).get(fileName)
+
+	if username in permfile.users_write:
+		filedb = file_setup()
+		delfile = db.query(File).get(fileName)
+		#if file does not exist assume it's already deleted
+		if not delfile:
+			return True
+
+		filedb.remove(delfile)
+		filedb.commit()
+		return True
+	return False
 
 ##
 # read(fileName, username, token)
@@ -50,6 +80,21 @@ def read(fileName, username, token):
 	if not check_token(username, token):
 		return False
 
+	#check permission
+	permdb = permission_setup()
+	permfile = permdb.query(Permission).get(fileName)
+
+	if username in permfile.users_read:
+		filedb = file_setup()
+		datfile = db.query(File).get(fileName)
+		#if file exists return its contents
+		if datfile:
+			return datfile.content
+
+	return False
+
+
+
 ##
 # write(fileName, content, username, token)
 #
@@ -64,8 +109,22 @@ def write(fileName, content, username, token):
 	if not check_token(username, token):
 		return False
 
+	#check permission
+	permdb = permission_setup()
+	permfile = permdb.query(Permission).get(fileName)
+
+	if username in permfile.users_write:
+		filedb = file_setup()
+		datfile = db.query(File).get(fileName)
+		#if file exists return its contents
+		if datfile:
+			datfile.content = content
+			return True
+
+	return False
+
 ##
-# rename(oldName, newName, username, token)
+# rename(oldname, newName, username, token)
 #
 # oldName - the encrypted name of the file we want to rename
 # newName - the new encrypted title we want to give a file
@@ -78,7 +137,7 @@ def write(fileName, content, username, token):
 def rename(oldName, newName, username, token):
 	if not check_token(username, token):
 		return False
-
+	
 ##
 # perm(fileName, perms, username, token)
 #
