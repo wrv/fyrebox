@@ -7,7 +7,7 @@ import pbkdf2
 
 def newtoken(db, person):
     hashinput = '%s%.10f' % (person.password_hash, random.random())
-    person.token = hashlib.md5(hashinput).hexdigest()
+    person.token = hashlib.sha256(hashinput).hexdigest()
     db.commit()
     return person.token
 
@@ -26,14 +26,14 @@ def login(username, password):
     person = db.query(User).get(username)
 
     if not person:
-        return None
+        return (None, None)
 
     hashedpass = unicode(pbkdf2.PBKDF2(password, person.salt).hexread(32), errors='replace')
 
-    if person.password == hashedpass:
-        return newtoken(db, person)
+    if person.password_hash == hashedpass:
+        return (newtoken(db, person), person.rootdir)
     else:
-        return None
+        return (None, None)
 
 ##
 # register(username, password)
@@ -50,18 +50,29 @@ def register(username, password):
 
     if person:
     	print username + " person exists"
-        return None
+        return (None, None)
 
+    dirdb = directory_setup()
 
     #now we add the person and add it to the other database
     salt = unicode(os.urandom(8), errors='replace')
     hashpass = unicode(pbkdf2.PBKDF2(password,salt).hexread(32), errors='replace')
-    
-    newperson = User(username, hashpass, salt)
+    rootdir = hashlib.md5('%s%.10f' % (person.password_hash, random.random())).hexdigest()
+    dirlol = db.query(Directory).get(rootdir)
+    if dirlol:
+        print "error creating user"
+        return (None, None)
+
+    newdir = Directory(rootdir, rootdir)
+    newperson = User(username, hashpass, salt, rootdir)
+
+    dirdb.add(newdir)
     db.add(newperson)
+    dirdb.commt()
     db.commit()
 
-    return newtoken(db, newperson)
+
+    return (newtoken(db, newperson), rootdir)
 
 def check_token(username, token):
     db = user_setup()

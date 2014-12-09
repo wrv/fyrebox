@@ -17,11 +17,13 @@ class User(Base):
 	password_hash = Column(String(128))
 	salt = Column(String(128))
 	token = Column(String(128))
+	rootdir = Column(String(128))
 	
-	def __init__(self, name, password_hash, salt):
+	def __init__(self, name, password_hash, salt, rootdir):
 		self.name = name
 		self.salt = salt
 		self.password_hash = password_hash
+		self.rootdir = rootdir
 
 class Directory(Base):
 	__tablename__ = "directory"

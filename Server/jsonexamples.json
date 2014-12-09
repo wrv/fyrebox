@@ -1,0 +1,76 @@
+<<<<<<<<AUTHENTICATION OPERATIONS>>>>>>>>>>>>
+-------------Registering:
+
+Send: {"operation": "register", "username": "<username>", "password": "<password>"}
+
+Recieve: {"username": "<username>", "token": "<token>", "timestamp":"<timestamp", "rootdir":"<rootdir"}
+
+
+------------Logging in:
+Send: {"operation": "login", "username": "<username>", "password": "<password>"}
+
+Recieve: {"username": "<username>", "token": "<token>", "timestamp":"<timestamp", "rootdir":"<rootdir"}
+
+
+
+
+<<<<<<<<FILE OPERATIONS>>>>>>>>>>>>
+------------Create File:
+Send: {"operation": "create", "username": "<username>", "token": "<token>", "filename":"<filename>", "dirname":"<directory name>"}
+
+Recieve: {"message":"success", "fileid":"<fileid>"}
+
+------------Delete File:
+Send: {"operation": "delete", "username": "<username>", "token": "<token>", "filename":"<filename>", "fileid":"<fileid>"}
+
+Recieve: {"message":"success"}
+
+------------Read File:
+Send: {"operation": "read", "username": "<username>", "token": "<token>", "filename":"<filename>", "fileid":"<fileid>"}
+
+Recieve: {"message":"success", "content":"<content>", ("newfilename":"newfilename"/*if filename has changed*/)}
+
+------------Write to File:
+Send: {"operation": "write", "username": "<username>", "token": "<token>", "filename":"<filename>", "fileid":"<fileid>"}
+
+Recieve: {"message":"success"}
+
+------------Rename File:
+Send: {"operation": "rename", "username": "<username>", "token": "<token>", "filename":"<filename>", "fileid":"<fileid>"}
+
+Recieve:{"message":"success"} 
+
+------------Change Permission on File:
+Send: {"operation": "perm", "username": "<username>", "token": "<token>", "filename":"<filename>", "fileid":"<fileid>"}
+
+Recieve: {"message":"success"}
+
+
+
+
+<<<<<<<<DIRECTORY OPERATIONS>>>>>>>>>>>>
+
+------------Create Directory:
+Send: {"operation": "createdir", "username": "<username>", "token": "<token>", "dirname":"<dirname>", "parentdir":"<parent directory name>"}
+
+Recieve: {"message":"success", "dirid":"<directory id>"}
+
+------------Delete Directory:
+Send: {"operation": "deletedir", "username": "<username>", "token": "<token>", "dirname":"<dirname>", "dirid":"<directory id>"}
+
+Recieve: {"message":"success"}
+
+------------Read Directory:
+Send: {"operation": "readdir", "username": "<username>", "token": "<token>", "dirname":"<dirname>", "dirid":"<directory id>"}
+
+Recieve: {"message":"success", "content":[<array of dirs and files>]}
+
+------------Rename Directory:
+Send: {"operation": "renamedir", "username": "<username>", "token": "<token>", "dirname":"<dirname>", "dirid":"<directory id>"}
+
+Recieve: {"message":"success"}
+
+------------Change Permission of Directory:
+Send: {"operation": "permdir", "username": "<username>", "token": "<token>", "dirname":"<dirname>", "dirid":"<directory id>"}
+
+Recieve: {"message":"success"}

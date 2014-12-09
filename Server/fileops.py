@@ -12,7 +12,7 @@ from auth import check_token
 # Checks the token, creates a new entry in the file database
 # responds with a success/failure based on if the file already exists
 #
-def create(fileId, fileName, dirname, username, token):
+def create(fileName, dirname, username, token):
 	if not check_token(username, token):
 		return False
 		
