@@ -34,9 +34,9 @@ class FileServer(LineReceiver):
     def dataReceived(self, data):
         #print data
         if self.state == "UNAUTHENTICATED":
-            self.handle_UNAUTHENTICATED(line)
+            self.handle_UNAUTHENTICATED(data)
         else:
-            self.handle_AUTHENTICATED(line)
+            self.handle_AUTHENTICATED(data)
 
     def lineReceived(self, line):
         #print line

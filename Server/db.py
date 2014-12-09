@@ -13,42 +13,39 @@ Base = declarative_base()
 
 class User(Base):
 	__tablename__ = "user"
-	name = Column(String, unique=True)
-	password = Column(String(128))
+	name = Column(String, unique=True, primary_key=True)
+	password_hash = Column(String(128))
 	salt = Column(String(128))
 	token = Column(String(128))
 	
-	def __init__(self, name, password, salt, token):
+	def __init__(self, name, password_hash, salt):
 		self.name = name
 		self.salt = salt
-		self.token = token
+		self.password_hash = password_hash
 
 class Directory(Base):
 	__tablename__ = "directory"
 	id = Column(String(128), primary_key=True)
-	key = Column(String(128))
 	dirname = Column(String(128))
-	content = relationship("File", backref="directory")
+	files = relationship("File", backref="directory")
+	directories = relationship("Directory", backref="directory")
 
-	def __init__(self, id, key, dirname, content):
+	def __init__(self, id, dirname):
 		self.id = id
-		self.key = key
 		self.dirname = dirname
-		self.content = content
+
 
 class File(Base):
 	__tablename__ = "file"
 	id = Column(String(128), primary_key=True)
-	key = Column(String)
 	filename = Column(String(128), unique=True)
 	content = Column(String)
 	dir_id = Column(String(128), ForeignKey("directory.id"))
 	users_write = relationship("Permission", backref="file", primaryjoin="permission.perm_type == True")
 	users_read = relationship("Permission", backref="file", primaryjoin="permission.perm_type == False")
 
-	def __init__(self, id, key, filename, content, dir_id, users_write, users_read):
+	def __init__(self, id, filename, content, dir_id, users_write, users_read):
 		self.id = id
-		self.key = key
 		self.filename = filename
 		self.content = content
 		self.dir_id = dir_id
@@ -90,10 +87,14 @@ def file_setup():
 def permission_setup():
     return  setup_dbs("permission")
 
+def directory_setup():
+	return  setup_dbs("directory")
+
 
 if __name__ == '__main__':
         user_setup()
         file_setup()
         permission_setup()
+        directory_setup()
 
 
