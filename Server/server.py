@@ -2,12 +2,13 @@ import json
 
 from twisted.internet.protocol import Factory
 from twisted.protocols.basic import LineReceiver
-from twisted.internet import reactor
+from twisted.internet import reactor, ssl
+from twisted.python.modules import getModule
 
 import auth
 import fileops
 import dirops
-import logging
+import log_client
 
 
 AUTHOPS = ['register', 'login']
@@ -33,7 +34,12 @@ class FileServer(LineReceiver):
 
     #Will authenticate the user based on given info
     def handle_UNAUTHENTICATED(self, message):
-        parsedjson = json.load(message)
+        try:
+            parsedjson = json.loads(message)
+        except:
+            print "error in json. msg: " + message
+            return
+
         token = None
         op = parsedjson['operation']
         if op not in AUTHOPS:
@@ -41,27 +47,37 @@ class FileServer(LineReceiver):
             return
 
         if "register" == op:
+            print "registering"
             token = auth.register(parsedjson['username'], parsedjson['password'])
 
         if "login" == op:
+            print "logging in"
             token = auth.login(parsedjson['username'], parsedjson['password'])
         
         if token:
+            print "token successful"
             response = {}
-            response["username"] = parsedjson['username']
+            response['username'] = parsedjson['username']
             response['token'] = token
             self.sendLine(json.dumps(response))
             self.state = "AUTHENTICATED"
         else:
+            print "token unsuccessful"
             self.sendLine('{"message":"failure"}')
             return
 
     def handle_AUTHENTICATED(self, message):
-        parsedjson = json.load(message)
+        try:
+            parsedjson = json.loads(message)
+        except:
+            print "error in json. msg: " + message
+            return
+
         op = parsedjson['operation']
         if op not in FILEOPS or op not in DIROPS:
             self.sendLine('{"message":"failure"}')
             return
+
         username = parsedjson['username']
         token = parsedjson['token']
         #for organizational structure
@@ -95,10 +111,33 @@ class FileServer(LineReceiver):
                 if fileops.perm(filename, perms, username, token):
                     self.sendLine('{"message":"success"}')
                     return
+
         if op in DIROPS:
             dirname = parsedjson['dirname']
 
-            if ""
+            if "createdir" == op:
+                if dirops.createdir(dirname, username, token):
+                    self.sendLine('{"message":"success"}')
+                    return
+            elif "deletedir" == op:
+                if dirops.deletedir(dirname, username, token):
+                    self.sendLine('{"message":"success"}')
+                    return
+            elif "readdir" == op:
+                if dirops.readdir(dirname, username, token):
+                    self.sendLine('{"message":"success"}')
+                    return
+            elif "renamedir" == op:
+                newname = parsedjson['newname']
+                if dirops.renamedir(dirname, newname, username, token):
+                    self.sendLine('{"message":"success"}')
+                    return
+            elif "permdir" == op:
+                perms = parsedjson['permissions']
+                if dirops.permdir(dirname, perms, username, token):
+                    self.sendLine('{"message":"success"}')
+                    return
+
 
         self.sendLine('{"message":"failure"}')
         return
@@ -112,8 +151,9 @@ class FileServerFactory(Factory):
     def buildProtocol(self, addr):
         return FileServer(self.users)
 
-
-reactor.listenTCP(10023, FileServerFactory())
+certData = getModule(__name__).filePath.sibling('server.pem').getContent()
+certificate = ssl.PrivateCertificate.loadPEM(certData)
+reactor.listenSSL(10023, FileServerFactory(), certificate.options())
 reactor.run()
 
 # def do_something(connstream, data):

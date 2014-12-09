@@ -15,13 +15,13 @@ PermissionBase = declarative_base()
 
 class User(UserBase):
 	__tablename__ = "user"
-	id = Column(Integer, primary_key=True)
+	#id = Column(Integer, primary_key=True)
 	username = Column(String, unique=True, primary_key=True)
 	password = Column(String(128))
 	salt = Column(String(128))
 	token = Column(String(128))
 
-	files = relationship("File", order_by="File.id", backref="user")
+	#files = relationship("File", order_by="File.id", backref="user")
 
 
 	#need to setup init and refr methods
@@ -30,28 +30,19 @@ class File(FileBase):
 	__tablename__ = "file"
 	id = Column(Integer, primary_key=True)
 	filename = Column(String(128))
-<<<<<<< HEAD
-	owner_id = Column(String(128))
-=======
-	owner_id = Column(Integer, ForeignKey('user.id'))
->>>>>>> 496c50c308878c90a24f6f558983d6efc0e80a27
+	owner_id = Column(Integer)#, ForeignKey('user.id'))
 	content = Column(String)
 
-	owner = relationship("User", primaryjoin="User.id==File.owner_id", backref=backref('files', order_by=id))
-	permissions = relationship("Permission", order_by="Permission.id", primaryjoin="Permission.file_id == File.id", backref="file")
+	#owner = relationship("User", primaryjoin="User.id==File.owner_id", backref=backref('files', order_by=id))
+	#permissions = relationship("Permission", order_by="Permission.id", primaryjoin="Permission.file_id == File.id", backref="file")
 
 	
 
 class Permission(PermissionBase):
 	__tablename__ = "permission"
 	id = Column(Integer, primary_key=True)
-<<<<<<< HEAD
-	file_id = Column(String(128))
-	user_id = Column(String(128))
-=======
-	file_id = Column(Integer, ForeignKey('file.id'))
-	user_id = Column(Integer, ForeignKey('user.id'))
->>>>>>> 496c50c308878c90a24f6f558983d6efc0e80a27
+	file_id = Column(Integer)#, ForeignKey('file.id'))
+	user_id = Column(Integer)#, ForeignKey('user.id'))
 	perm_type = Column(Integer) # max should be 7 and min should be 1
 
 
@@ -77,15 +68,6 @@ def permission_setup():
 
 
 if __name__ == '__main__':
-<<<<<<< HEAD
-	cmd = raw_input('Recreate DB? (y/n)')
-	if cmd == 'y':
-		user_setup()
-		file_setup()
-		permission_setup()
-	else:
-		raise Exception("unknown command %s" % cmd)
-=======
     cmd = raw_input('Recreate DB? (y/n) ')
     if cmd == 'y':
         user_setup()
@@ -93,5 +75,3 @@ if __name__ == '__main__':
         permission_setup()
     else:
     	raise Exception("unknown command %s" % cmd)
->>>>>>> 496c50c308878c90a24f6f558983d6efc0e80a27
-

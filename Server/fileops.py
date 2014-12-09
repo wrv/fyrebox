@@ -1,4 +1,4 @@
-import logging
+import log_client
 from db import *
 from auth import check_token
 
