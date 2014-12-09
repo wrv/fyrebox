@@ -25,12 +25,21 @@ class FileServer(LineReceiver):
         self.state = "UNAUTHENTICATED"
 
     def connectionMade(self):
+        #log_client.log("Connection made")
         self.sendLine('{"message":"connected"}')
 
     def connectionLost(self, reason):
         pass
 
+    def dataReceived(self, data):
+        #print data
+        if self.state == "UNAUTHENTICATED":
+            self.handle_UNAUTHENTICATED(line)
+        else:
+            self.handle_AUTHENTICATED(line)
+
     def lineReceived(self, line):
+        #print line
         if self.state == "UNAUTHENTICATED":
             self.handle_UNAUTHENTICATED(line)
         else:
@@ -40,12 +49,13 @@ class FileServer(LineReceiver):
     def handle_UNAUTHENTICATED(self, message):
         try:
             parsedjson = json.loads(message)
+            op = parsedjson['operation']
         except:
             print "error in json. msg: " + message
             return
 
         token = None
-        op = parsedjson['operation']
+        
         if op not in AUTHOPS:
             self.sendLine('{"message":"failure"}')
             return
@@ -74,11 +84,11 @@ class FileServer(LineReceiver):
     def handle_AUTHENTICATED(self, message):
         try:
             parsedjson = json.loads(message)
+            op = parsedjson['operation']
         except:
             print "error in json. msg: " + message
             return
 
-        op = parsedjson['operation']
         if op not in FILEOPS or op not in DIROPS:
             self.sendLine('{"message":"failure"}')
             return
@@ -89,7 +99,7 @@ class FileServer(LineReceiver):
         except:
             print "error in json. msg: " + message
             return
-            
+
         #for organizational structure
         if op in FILEOPS:
             filename = parsedjson['filename']
@@ -158,6 +168,7 @@ class FileServerFactory(Factory):
         self.users = {} # maps user names to Chat instances
 
     def buildProtocol(self, addr):
+        print addr
         return FileServer(self.users)
 
 certData = getModule(__name__).filePath.sibling('server.pem').getContent()
