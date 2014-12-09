@@ -40,6 +40,7 @@ class File(Base):
 	__tablename__ = "file"
 	id = Column(String(128), primary_key=True)
 	filename = Column(String(128), unique=True)
+	owner = Column(String)
 	content = Column(String)
 	dir_id = Column(String(128), ForeignKey("directory.id"))
 	def _get_users_write():
@@ -52,8 +53,9 @@ class File(Base):
 	users_write = property(_get_users_write)
 	users_read = property(_get_users_read)
 
-	def __init__(self, id, filename, content, dir_id):
+	def __init__(self, id, owner, filename, content, dir_id):
 		self.id = id
+		self.owner = owner
 		self.filename = filename
 		self.content = content
 		self.dir_id = dir_id

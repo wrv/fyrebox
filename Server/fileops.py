@@ -12,23 +12,24 @@ from auth import check_token
 # Checks the token, creates a new entry in the file database
 # responds with a success/failure based on if the file already exists
 #
-def create(fileName, username, token):
+def create(fileId, fileName, dirname, username, token):
 	if not check_token(username, token):
 		return False
 	filedb = file_setup()
 	permdb = permission_setup()
+	directorydb = directory_setup()
 
+	parent_dir = directorydb.Query.get(dirname)
+	
 	#create the file
-	newfile = File()
-	newfile.filename = fileName
-	newfile.owner_id = 0
-	newfile.content = ""
+	newfile = File(fileId, username, fileName, "", parent_dir.id)
 
+	
 	#create the permissions for the file
 	newperm = Permission()
-	newperm.filename = fileName
-	newperm.users_read.add(username)
-	newperm.users_write.add(username)
+	newperm.file_id = newfile.id
+	newperm.user_name = username
+	newperm.perm_type = True
 
 	filedb.add(newfile)
 	filedb.commit()
