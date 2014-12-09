@@ -27,8 +27,9 @@ class Directory(Base):
 	__tablename__ = "directory"
 	id = Column(String(128), primary_key=True)
 	dirname = Column(String(128))
+	parent_id = Column(String(128), ForeignKey("directory.id"))
 	files = relationship("File", backref="directory")
-	directories = relationship("Directory", backref="directory")
+	directories = relationship("Directory")
 
 	def __init__(self, id, dirname):
 		self.id = id
@@ -41,17 +42,21 @@ class File(Base):
 	filename = Column(String(128), unique=True)
 	content = Column(String)
 	dir_id = Column(String(128), ForeignKey("directory.id"))
-	users_write = relationship("Permission", backref="file", primaryjoin="permission.perm_type == True")
-	users_read = relationship("Permission", backref="file", primaryjoin="permission.perm_type == False")
+	def _get_users_write():
+		return object_session(self).query(Permission).with_parent(self).filter(Permission.perm_type == 'True').all()
 
-	def __init__(self, id, filename, content, dir_id, users_write, users_read):
+	def _get_users_read():
+		return object_session(self).query(Permission).with_parent(self).filter(Permission.perm_type == 'False').all()
+
+
+	users_write = property(_get_users_write)
+	users_read = property(_get_users_read)
+
+	def __init__(self, id, filename, content, dir_id):
 		self.id = id
 		self.filename = filename
 		self.content = content
 		self.dir_id = dir_id
-		self.users_write = users_write
-		self.users_read = users_read
-
 
 
 class Permission(Base):
