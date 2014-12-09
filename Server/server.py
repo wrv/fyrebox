@@ -8,6 +8,7 @@ from twisted.python.modules import getModule
 from auth import login, register
 import fileops
 import dirops
+import time
 import log_client
 
 ##
