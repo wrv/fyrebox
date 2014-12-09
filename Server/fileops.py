@@ -15,6 +15,7 @@ from auth import check_token
 def create(fileId, fileName, dirname, username, token):
 	if not check_token(username, token):
 		return False
+		
 	filedb = file_setup()
 	permdb = permission_setup()
 	directorydb = directory_setup()
@@ -138,7 +139,7 @@ def write(fileName, content, username, token):
 def rename(oldName, newName, username, token):
 	if not check_token(username, token):
 		return False
-	
+
 ##
 # perm(fileName, perms, username, token)
 #
