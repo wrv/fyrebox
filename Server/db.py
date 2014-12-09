@@ -8,63 +8,71 @@ from sqlalchemy.orm import sessionmaker
 
 
 DEBUG_DB = False
-UserBase = declarative_base()
+Base = declarative_base()
 FileBase = declarative_base()
 PermissionBase = declarative_base()
+DirectoryBase = declarative_base()
 
 
-class User(UserBase):
+class User(Base):
 	__tablename__ = "user"
-	#id = Column(Integer, primary_key=True)
-	username = Column(String, unique=True, primary_key=True)
+	id = Column(Integer, primary_key=True)
+	name = Column(String, unique=True)
 	password = Column(String(128))
 	salt = Column(String(128))
 	token = Column(String(128))
+	permissions = relationship("Permission")
+	
 
-	#files = relationship("File", order_by="File.id", backref="user")
+
+class Directory(Base):
+	__tablename__ = "directory"
+	id = Column(String(128), primary_key=True)
+	dirname = Column(String(128))
+	content = Column(String)
+	files = relationship("File", backref="directory")
 
 
 	#need to setup init and refr methods
 
-class File(FileBase):
+class File(Base):
 	__tablename__ = "file"
-	id = Column(Integer, primary_key=True)
-	filename = Column(String(128))
-	owner_id = Column(Integer)#, ForeignKey('user.id'))
+	id = Column(String(128), primary_key=True)
+	filename = Column(String(128), unique=True)
 	content = Column(String)
+	dir_id = Column(String(128), ForeignKey("directory.id"))
+	permissions = relationship("Permission", backref="file")
 
-	#owner = relationship("User", primaryjoin="User.id==File.owner_id", backref=backref('files', order_by=id))
-	#permissions = relationship("Permission", order_by="Permission.id", primaryjoin="Permission.file_id == File.id", backref="file")
 
-	
 
-class Permission(PermissionBase):
+
+class Permission(Base):
 	__tablename__ = "permission"
 	id = Column(Integer, primary_key=True)
-	file_id = Column(Integer)#, ForeignKey('file.id'))
-	user_id = Column(Integer)#, ForeignKey('user.id'))
+	file_id = Column(String(128), ForeignKey('file.id'))
+	user_name = Column(String(128), ForeignKey('user.name'))
 	perm_type = Column(Integer) # max should be 7 and min should be 1
 
 
 
 	#need to setup init and refr methods
 
-def setup_dbs(name, base):
+def setup_dbs(name):
 	#setup jailing here
 
     engine = create_engine('sqlite:///%s.db' % name, echo=DEBUG_DB)
-    base.metadata.create_all(engine)
+    Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     return Session()
 
 def user_setup():
-    return  setup_dbs("user", UserBase)
+    return  setup_dbs("user")
 
 def file_setup():
-    return  setup_dbs("file", FileBase)
+    return  setup_dbs("file")
 
 def permission_setup():
-    return  setup_dbs("permission", PermissionBase)
+    return  setup_dbs("permission")
 
 
 if __name__ == '__main__':
@@ -75,3 +83,4 @@ if __name__ == '__main__':
         permission_setup()
     else:
     	raise Exception("unknown command %s" % cmd)
+
