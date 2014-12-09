@@ -52,14 +52,12 @@ def register(username, password):
     	print username + " person exists"
         return None
 
-    newperson = User()
-    newperson.username = username
 
     #now we add the person and add it to the other database
     salt = unicode(os.urandom(8), errors='replace')
     hashpass = unicode(pbkdf2.PBKDF2(password,salt).hexread(32), errors='replace')
-    newperson.password = hashpass
-    newperson.salt = salt
+    
+    newperson = User(username, password_hash, salt)
     db.add(newperson)
     db.commit()
 
