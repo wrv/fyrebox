@@ -1,3 +1,40 @@
+from Crypto.Cipher import AES
+import base64
+import os
+import time
+import ssl
+import socket
+
+username = "likzuz"
+def help(comSplit):
+	print "stuff"
+def create(comSplit):
+	if len(comSplit) != 2:
+		print "Improper command length, create <file name>"
+		return
+	key = os.urandom(32)
+	fileName = comSplit[1]
+	content = ""
+	identifier = username + str(time.time()) + str(base64.b64encode(os.urandom(32)))
+	newFile = File(fileName, content, key, identifier)
+	openFiles.append(newFile)
+	print "fileName = " + fileName + " content = " + content + " key = " + str(key) + " identifier = " + str(identifier)
+def rm(comSplit):
+	print "rm"
+def write(comSplit):
+	print "write"
+def rename(comSplit):
+	print "rename"
+def perm(comSplit):
+	print "perm"
+commands = {"help"		: help,
+			"create" 	: create,
+			"rm" 		: rm,
+			"write"		: write,
+			"rename"	: rename,
+			"perm"		: perm,
+}
+openFiles = []
 class File:
 	#"""A simple class that represents an in memory file, useful for manipulation on the client side"""
 	def __init__(self, fileName, content, key, identifier):
@@ -18,10 +55,47 @@ class WriteError(Exception):
         return repr(self.value)
 
 def main():
+	login()	
 	while(1):
 		command = raw_input("$ ")
-		print command
+		commandSplit = command.split()
+		if len(commandSplit) == 0:
+			continue
+		if commandSplit[0] in commands:
+			com = commandSplit[0]
+			commands[com](commandSplit)
+			decrypt(encrypt("bladlsfjskdfj"), key)
+		else:
+			print "Unrecognized command " + str(commandSplit[0])
+def encrypt(content):
+	global key
+	BLOCK_SIZE = 32
+	PADDING = '{'
+	pad = lambda s: s + (BLOCK_SIZE - (len(s) % BLOCK_SIZE)) * PADDING
+	EncodeAES = lambda c, s: base64.b64encode(c.encrypt(pad(s)))
+	key = os.urandom(BLOCK_SIZE)
+	print "encryption key:",key
+	cipher = AES.new(key)
+	encoded = EncodeAES(cipher,content);
+	print "Encrypted string:", encoded
+	return encoded
+def decrypt(content, key):
+	PADDING = "{"
+	DecodeAES = lambda c, e: c.decrypt(base64.b64decode(e)).rstrip(PADDING)
+	encryption = content
+	cipher = AES.new(key)
+	decoded = DecodeAES(cipher, encryption)
+	print decoded
+def login():
+	print "$ Type 1 to register, 2 to login"
+	cmd = raw_input("$ ")
+	s_ = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	s = ssl.wrap_socket(s_, ca_certs='/usr/local/lib/python2.7/dist-packages/requests/cacert.pem', cert_reqs=ssl.CERT_REQUIRED)
+	s.connect(('18.189.121.235', 10023))
+	s.write("poop")
+	s.write("hehehe")
+	
 
-
+	
 if __name__ == "__main__":
 	main()
