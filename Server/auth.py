@@ -57,7 +57,7 @@ def register(username, password):
     salt = unicode(os.urandom(8), errors='replace')
     hashpass = unicode(pbkdf2.PBKDF2(password,salt).hexread(32), errors='replace')
     
-    newperson = User(username, password_hash, salt)
+    newperson = User(username, hashpass, salt)
     db.add(newperson)
     db.commit()
 
