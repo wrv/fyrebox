@@ -1,4 +1,4 @@
-import logging
+import log_client
 from db import *
 from auth import check_token
 
@@ -65,7 +65,7 @@ def write(fileName, content, username, token):
 		return False
 
 ##
-# rename(oldName, newName, username, token)
+# rename(oldname, newName, username, token)
 #
 # oldName - the encrypted name of the file we want to rename
 # newName - the new encrypted title we want to give a file

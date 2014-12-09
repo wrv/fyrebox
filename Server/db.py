@@ -1,7 +1,7 @@
-#!/usr/bin/env python
-
 import os
-from sqlalchemy import create_engine, ForeignKey
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import relationship, backref
+from sqlalchemy import create_engine
 from sqlalchemy import Column, Date, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -21,23 +21,31 @@ class User(UserBase):
 	salt = Column(String(128))
 	token = Column(String(128))
 
+	#files = relationship("File", order_by="File.id", backref="user")
+
+
 	#need to setup init and refr methods
 
 class File(FileBase):
 	__tablename__ = "file"
 	id = Column(Integer, primary_key=True)
 	filename = Column(String(128))
-	owner_id = Column(ForeignKey('user.id'))
+	owner_id = Column(Integer)#, ForeignKey('user.id'))
 	content = Column(String)
 
-	#need to setup init and refr methods
+	#owner = relationship("User", primaryjoin="User.id==File.owner_id", backref=backref('files', order_by=id))
+	#permissions = relationship("Permission", order_by="Permission.id", primaryjoin="Permission.file_id == File.id", backref="file")
+
+	
 
 class Permission(PermissionBase):
 	__tablename__ = "permission"
 	id = Column(Integer, primary_key=True)
-	file_id = Column(ForeignKey('file.id'))
-	user_id = Column(ForeignKey('user.id'))
+	file_id = Column(Integer)#, ForeignKey('file.id'))
+	user_id = Column(Integer)#, ForeignKey('user.id'))
 	perm_type = Column(Integer) # max should be 7 and min should be 1
+
+
 
 	#need to setup init and refr methods
 
@@ -60,11 +68,10 @@ def permission_setup():
 
 
 if __name__ == '__main__':
-	cmd = raw_input('Recreate DB? (y/n) ')
+    cmd = raw_input('Recreate DB? (y/n) ')
     if cmd == 'y':
         user_setup()
         file_setup()
         permission_setup()
     else:
     	raise Exception("unknown command %s" % cmd)
-
