@@ -2,3 +2,4 @@ SQLAlchemy==0.9.8
 pyOpenSSL==0.14
 rpclib==2.8.0-rc
 service_identity
+Twisted==14.0.2

@@ -13,14 +13,12 @@ Base = declarative_base()
 
 class User(Base):
 	__tablename__ = "user"
-	id = Column(Integer, primary_key=True)
 	name = Column(String, unique=True)
 	password = Column(String(128))
 	salt = Column(String(128))
 	token = Column(String(128))
 	
-	def __init__(self, id, name, password, salt, token):
-		self.id = id
+	def __init__(self, name, password, salt, token):
 		self.name = name
 		self.salt = salt
 		self.token = token
