@@ -6,7 +6,7 @@ import random
 import pbkdf2
 
 def newtoken(db, person):
-    hashinput = '%s%.10f' % (person.password, random.random())
+    hashinput = '%s%.10f' % (person.password_hash, random.random())
     person.token = hashlib.md5(hashinput).hexdigest()
     db.commit()
     return person.token
