@@ -17,12 +17,10 @@ class PublicKey(Base):
             pk : user's public key
     """
 
-    # TODO: add VARCHAR length for non-sqlite dbs e.g Column(String(50))
-
     __tablename__ = 'pks'
     id = Column(Integer, Sequence('public_key_seq'), primary_key=True)
     username = Column(String)
-    key = Column(String)
+    key = Column(String(512))
 
     def __repr__(self):
         return "<User( username='%s', key='%s')>" % (

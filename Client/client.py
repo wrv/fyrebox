@@ -5,20 +5,18 @@ import time
 from OpenSSL import SSL
 import socket
 import json
-
-def help(comSplit):
+from file import *
+from crypto import *
+def helpme(comSplit):
 	print "stuff"
 def create(comSplit):
 	if len(comSplit) != 2:
 		print "Improper command length, create <file name>"
 		return
-	key = os.urandom(32)
-	fileName = comSplit[1]
+	file_key = os.urandom(32)
+	file_name = comSplit[1]
 	content = ""
-	identifier = username + str(time.time()) + str(base64.b64encode(os.urandom(32)))
-	newFile = File(fileName, content, key, identifier)
-	openFiles.append(newFile)
-	print "fileName = " + fileName + " content = " + content + " key = " + str(key) + " identifier = " + str(identifier)
+	newFile = File(file_name, content, file_key, unique_id)
 def rm(comSplit):
 	print "rm"
 def write(comSplit):
@@ -27,7 +25,7 @@ def rename(comSplit):
 	print "rename"
 def perm(comSplit):
 	print "perm"
-commands = {"help"		: help,
+commands = {		"help"		: helpme,
 			"create" 	: create,
 			"rm" 		: rm,
 			"write"		: write,
@@ -37,19 +35,7 @@ commands = {"help"		: help,
 openFiles = []
 sslSocket = None
 token = None
-class File:
-	#"""A simple class that represents an in memory file, useful for manipulation on the client side"""
-	def __init__(self, fileName, content, key, identifier):
-		self.fileName = fileName
-		self.content = content
-		self.key = key
-		self.identifier = identifier
-	def write(self, content, token):
-		response = sendWrite(self.fileName, content, token)
-		if response != -1:
-			self.content = content
-			return 0
-		return -1
+current_directory = None
 class WriteError(Exception):
     def __init__(self, value):
         self.value = value
@@ -67,28 +53,10 @@ def main():
 		if commandSplit[0] in commands:
 			com = commandSplit[0]
 			commands[com](commandSplit)
-			decrypt(encrypt("bladlsfjskdfj"), key)
+			key = os.urandom(32)
+			print decrypt(encrypt("bladlsfjskdfj", key), key)
 		else:
 			print "Unrecognized command " + str(commandSplit[0])
-def encrypt(content):
-	global key
-	BLOCK_SIZE = 32
-	PADDING = '{'
-	pad = lambda s: s + (BLOCK_SIZE - (len(s) % BLOCK_SIZE)) * PADDING
-	EncodeAES = lambda c, s: base64.b64encode(c.encrypt(pad(s)))
-	key = os.urandom(BLOCK_SIZE)
-	print "encryption key:",key
-	cipher = AES.new(key)
-	encoded = EncodeAES(cipher,content);
-	print "Encrypted string:", encoded
-	return encoded
-def decrypt(content, key):
-	PADDING = "{"
-	DecodeAES = lambda c, e: c.decrypt(base64.b64decode(e)).rstrip(PADDING)
-	encryption = content
-	cipher = AES.new(key)
-	decoded = DecodeAES(cipher, encryption)
-	print decoded
 def serverConnection():
     global sslSocket
     context = SSL.Context(SSL.SSLv23_METHOD)
@@ -100,8 +68,8 @@ def serverConnection():
 def login():
     global sslSocket
     global token
-    print "$ Type 1 to register, 2 to login"
     while 1:
+        print "$ Type 1 to register, 2 to login"
         cmd = raw_input("$ ")
         message = {}
         if cmd.strip() == "1":
@@ -110,7 +78,7 @@ def login():
             message["operation"] = "login"
         else:
             print "Improper command"
-            continue 
+            continue
         username = raw_input("$ username = ")
         password = raw_input("$ password = ")
         message["username"] = username
@@ -120,9 +88,16 @@ def login():
         sslSocket.write(encoded)
         response = sslSocket.read()
         response = json.loads(response)
-        token = response['token']
         print response
-        print token
+        if 'message' in response:
+                continue
+        token = response['token']
+        if cmd.strip() == "1":
+                os.mkdir(username)
+                os.chdir(username)
+        if cmd.strip() == "2":
+                os.chdir(username)
+        return
 
 if __name__ == "__main__":
 	main()
