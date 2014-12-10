@@ -42,13 +42,35 @@ encoded_file_key)
     session.commit()    
 def write(file_name, content):
     file_key = session.query(FileInfo).filter_by(file_name = file_name)
-    print file_key.first().file_key
-    
+    message = {}
+    message['operation'] = "write"
+    message['username'] = username
+    message['token'] = token
+    message['filename'] = encrypt(file_name, file_key.first().file_key.decode('hex'))
+    message['fileid'] =  file_key.first().unique_id
+    message['content'] = content
+    print message
+    sslSocket.write(json.dumps(message))
+    response = json.loads(sslSocket.read())
+    print response
+def read(file_name):
+    file_key = session.query(FileInfo).filter_by(file_name = file_name)
+    message = {}
+    message['operation'] = "read"
+    message['username'] = username
+    message['token'] = token
+    message['filename'] = encrypt(file_name, file_key.first().file_key.decode('hex'))
+    message['fileid'] =  file_key.first().unique_id
+    print message
+    sslSocket.write(json.dumps(message))
+    response = json.loads(sslSocket.read())
+    print response
 def main():
     serverConnection()
     register("asdfasdf", "test")
     create("testfile")
     write("testfile", "test")
+    read("testfile")
 def serverConnection():
     global sslSocket
     context = SSL.Context(SSL.SSLv23_METHOD)
