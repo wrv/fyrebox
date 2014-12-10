@@ -56,18 +56,19 @@ class FileServer(LineReceiver):
             return
 
         token = None
-        
+        rootdir = None
+
         if op not in AUTHOPS:
             self.sendLine('{"message":"failure"}')
             return
 
         if "register" == op:
             print "registering"
-            token = auth.register(parsedjson['username'], parsedjson['password'])
+            (token, rootdir) = auth.register(parsedjson['username'], parsedjson['password'])
 
         if "login" == op:
             print "logging in"
-            token = auth.login(parsedjson['username'], parsedjson['password'])
+            (token, rootdir) = auth.login(parsedjson['username'], parsedjson['password'])
         
         if token:
             print "token successful"
@@ -75,6 +76,7 @@ class FileServer(LineReceiver):
             response['username'] = parsedjson['username']
             response['token'] = token
             response['timestamp'] = time.time()
+            response['rootdir'] = rootdir
             self.sendLine(json.dumps(response))
             self.state = "AUTHENTICATED"
         else:
@@ -106,7 +108,8 @@ class FileServer(LineReceiver):
             filename = parsedjson['filename']
 
             if "create" == op:
-                if fileops.create(filename, username, token):
+                output = fileops.create(filename, username, token)
+                if output:
                     self.sendLine('{"message":"success"}')
                     return
             elif "delete" == op:
