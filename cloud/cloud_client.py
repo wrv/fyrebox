@@ -71,6 +71,9 @@ write_message_from_dict({'operation':'list'})
 data = ssl_sock.read()
 
 print "REPLY DATA ::::: " , data
+data = ssl_sock.read()
+
+print "REPLY DATA ::::: " , data
 
 # note that closing the SSLSocket will also close the underlying socket
 ssl_sock.close()

@@ -5,6 +5,8 @@ ref: https://docs.python.org/2/library/ssl.html#ssl-security
 """
 
 import socket 
+import asyncore
+
 import ssl
 import json
 from settings import SERVER_NAME, SERVER_PORT, SERVER_BACKLOG, DEBUG
@@ -14,6 +16,39 @@ from sqlalchemy.orm import sessionmaker
 Session = sessionmaker(bind=engine) # session class
 session = Session() # TODO change to class, one session per connection
 
+
+#class RequestHandler(asyncore.dispatcher_with_send):
+    #def handle_read(self):
+        #data = self.recv(8192)
+        #if data:
+            #self.send(data)
+
+
+        #newsocket, fromaddr = bindsocket.accept()
+        #connstream = ssl.wrap_socket(newsocket, 
+                                #server_side=True,
+                                #certfile="certs/server.crt",
+                                #keyfile="certs/server.key",
+                                #ssl_version=ssl.PROTOCOL_SSLv23)
+    #try:
+        #handle_connection(connstream)
+    #finally:
+        #connstream.shutdown(socket.SHUT_RDWR)
+        #connstream.close()
+
+#class FyreBoxCloudServer(asyncore.dispatcher):
+    #def __init__(self, host, port):
+        #asyncore.dispatcher.__init__(self)
+        #self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+        #self.set_reuse_addr()
+        #self.bind((host, port))
+        #self.listen(SERVER_BACKLOG)
+    #def handle_accept(self):
+        #pair = self.accept()
+        #if pair is not None:
+            #sock, addr = pair
+            #print 'Incoming connection from %s' % repr(addr)
+            #handler = RequestHandler(sock)
 
 def process_data(connstream, data):
     print "process_data:", data
