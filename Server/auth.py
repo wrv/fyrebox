@@ -57,7 +57,7 @@ def register(username, password):
     #now we add the person and add it to the other database
     salt = unicode(os.urandom(8), errors='replace')
     hashpass = unicode(pbkdf2.PBKDF2(password,salt).hexread(32), errors='replace')
-    rootdir = hashlib.md5('%s%.10f' % (person.password_hash, random.random())).hexdigest()
+    rootdir = hashlib.md5('%s%.10f' % (hashpass, random.random())).hexdigest()
     dirlol = db.query(Directory).get(rootdir)
     if dirlol:
         print "error creating user"
@@ -68,7 +68,7 @@ def register(username, password):
 
     dirdb.add(newdir)
     db.add(newperson)
-    dirdb.commt()
+    dirdb.commit()
     db.commit()
 
 

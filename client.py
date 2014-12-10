@@ -2,10 +2,10 @@ from Crypto.Cipher import AES
 import base64
 import os
 import time
-import ssl
+from OpenSSL import SSL
 import socket
+import json
 
-username = "likzuz"
 def help(comSplit):
 	print "stuff"
 def create(comSplit):
@@ -35,6 +35,8 @@ commands = {"help"		: help,
 			"perm"		: perm,
 }
 openFiles = []
+sslSocket = None
+token = None
 class File:
 	#"""A simple class that represents an in memory file, useful for manipulation on the client side"""
 	def __init__(self, fileName, content, key, identifier):
@@ -55,8 +57,9 @@ class WriteError(Exception):
         return repr(self.value)
 
 def main():
-	login()	
-	while(1):
+    serverConnection()
+    login()
+    while(1):
 		command = raw_input("$ ")
 		commandSplit = command.split()
 		if len(commandSplit) == 0:
@@ -86,18 +89,38 @@ def decrypt(content, key):
 	cipher = AES.new(key)
 	decoded = DecodeAES(cipher, encryption)
 	print decoded
-def login():
-    print "$ Type 1 to register, 2 to login"
-    cmd = raw_input("$ ")
+def serverConnection():
+    global sslSocket
+    context = SSL.Context(SSL.SSLv23_METHOD)
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect(('localhost', 10023))
     sslSocket = socket.ssl(s)
+    response = sslSocket.read()
+    print response
+def login():
+    global sslSocket
+    global token
+    print "$ Type 1 to register, 2 to login"
     while 1:
-        sslSocket.write("poop")
-        sslSocket.write("hehehe")
-        d = sslSocket.read()
-        print d	
-
-	
+        cmd = raw_input("$ ")
+        message = {}
+        if cmd.strip() == "1":
+            message["operation"] = "register"
+        elif cmd.strip() == "2":
+            message["operation"] = "login"
+        else:
+            print "Improper command"
+            continue 
+        username = raw_input("$ username = ")
+        password = raw_input("$ password = ")
+        message["username"] = username
+        message["password"] = password
+        encoded = json.dumps(message)
+        print encoded
+        sslSocket.write(encoded)
+        response = sslSocket.read()
+        response = json.loads(response)
+        token = response['token']
+        print token
 if __name__ == "__main__":
 	main()
