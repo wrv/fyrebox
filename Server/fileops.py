@@ -22,20 +22,21 @@ def create(filename, dirname, username, token):
 		return False
 	
 	#setup of the databases
+	userdb = user_setup()
+	user = userdb.query(User).filter(User.name == username).one()
 	filedb = file_setup()
 	permdb = permission_setup()
-	directorydb = directory_setup()
 
 	#get a reference to the parent directory we're working in
-	parent_dir = directorydb.query(Directory).get(dirname)
+	parent_dir = filedb.query(File).
 
 	#generate the fileID from various variables
 	fileID = hashlib.sha256(username + token + filename + dirname + str(time.time())+ str(random.random())).hexdigest()
 	#create the file
-	newfile = File(fileID, username, filename, "", parent_dir.id)
+	newfile = File(identifier=fileID, filename=filename, owner_id=user.id, content="", directory=False)
 
 	#create the permissions for the file
-	newperm = Permission(None, True, username, fileID)
+	newperm = Permission(user_id=user.id, file_id=newfile.id, perm_type=True)
 
 	filedb.add(newfile)
 	filedb.commit()
@@ -54,23 +55,25 @@ def create(filename, dirname, username, token):
 # Checks the token, checks write permission on file and all files inside
 # of folder. Remove corresponding file. Respond with success/failure.
 #
-def delete(fileid, filename, username, token):
+def delete(filename, username, token):
 	if not check_token(username, token):
 		return False
 	#check permissions
+	userdb = user_setup()
+	user = userdb.query(User).filter(User.name == username).one()
+
+	filedb = file_setup()
+	file = filedb.query(File).filter(File.filename == filename).one()
+	
 	permdb = permission_setup()
-	permfile = permdb.query(Permission).get(filename)
+	if file:
+		permission = permdb.query(Permission).get((user.id, file.id))
 
-	if username in permfile.users_write:
-		filedb = file_setup()
-		delfile = db.query(File).get(filename)
-		#if file does not exist assume it's already deleted
-		if not delfile:
-			return True
-
-		filedb.remove(delfile)
-		filedb.commit()
-		return True
+		if permission not None:
+			if permfile.perm_type: #if they have write permissions
+				file.delete()
+				filedb.commit()
+				return True
 	return False
 
 ##
@@ -83,19 +86,21 @@ def delete(fileid, filename, username, token):
 # Checks the token, check read permission on file. Send json data
 # of {op: read, filename=name, content=content, perm=(username, E_pk(key))}
 #
-def read(fileid, filename, username, token):
+def read(filename, username, token):
 	if not check_token(username, token):
 		return False
 
-	#check permission
+	
+	userdb = user_setup()
+	user = userdb.query(User).filter(User.name == username).one()
+	filedb = file_setup()
+	datfile = db.query(File).filter(File.filename == filename).one()
 	permdb = permission_setup()
-	permfile = permdb.query(Permission).get(filename)
+	if datfile: 
+		permfile = permdb.query(Permission).get((user.id, datfile.id))
 
-	if username in permfile.users_read:
-		filedb = file_setup()
-		datfile = db.query(File).get(filename)
-		#if file exists return its contents
-		if datfile:
+		# if in the permissions database they have the permission to read
+		if permfile:
 			return datfile.content
 
 	return False
@@ -112,19 +117,20 @@ def read(fileid, filename, username, token):
 # Checks the token, check write permission on file, overwrite content with
 # new content, respond with success/failure
 #
-def write(fileid, filename, content, username, token):
+def write(filename, content, username, token):
 	if not check_token(username, token):
 		return False
 
 	#check permission
+	userdb = user_setup()
+	user = userdb.query(User).filter(User.name == username).one()
+	filedb = file_setup()
+	datfile = db.query(File).filer(File.filename == filename).one()
 	permdb = permission_setup()
-	permfile = permdb.query(Permission).get(filename)
+	if datfile:
+		permfile = permdb.query(Permission).get((user.id, datfile.id))
 
-	if username in permfile.users_write:
-		filedb = file_setup()
-		datfile = db.query(File).get(filename)
-		#if file exists return its contents
-		if datfile:
+		if permfile.perm_type:
 			datfile.content = content
 			return True
 
