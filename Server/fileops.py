@@ -67,7 +67,7 @@ def delete(filename, username, token):
 	
 	permdb = permission_setup()
 	if file:
-		permission = permdb.query(Permission).get((user.id, file.id))
+		permission = permdb.query(Permission_Assoc).get((user.id, file.id))
 
 		if permission not None:
 			if permfile.perm_type: #if they have write permissions
@@ -94,10 +94,10 @@ def read(filename, username, token):
 	userdb = user_setup()
 	user = userdb.query(User).filter(User.name == username).one()
 	filedb = file_setup()
-	datfile = db.query(File).filter(File.filename == filename).one()
+	datfile = filedb.query(File).filter(File.filename == filename).one()
 	permdb = permission_setup()
 	if datfile: 
-		permfile = permdb.query(Permission).get((user.id, datfile.id))
+		permfile = permdb.query(Permission_Assoc).get((user.id, datfile.id))
 
 		# if in the permissions database they have the permission to read
 		if permfile:
@@ -125,10 +125,10 @@ def write(filename, content, username, token):
 	userdb = user_setup()
 	user = userdb.query(User).filter(User.name == username).one()
 	filedb = file_setup()
-	datfile = db.query(File).filer(File.filename == filename).one()
+	datfile = filedb.query(File).filter(File.filename == filename).one()
 	permdb = permission_setup()
 	if datfile:
-		permfile = permdb.query(Permission).get((user.id, datfile.id))
+		permfile = permdb.query(Permission_Assoc).get((user.id, datfile.id))
 
 		if permfile.perm_type:
 			datfile.content = content

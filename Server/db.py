@@ -19,8 +19,8 @@ class User(Base):
 	salt = Column(String(128))
 	token = Column(String(128))
 	rootdir = Column(String(128), default="/")
-	permissions = relationship('Permission_Assoc', backref=backref("user", lazy="joined"))
-	files = relationship('File', backref=backref("user", lazy="joined"))
+	permissions = relationship('Permission_Assoc')
+	files = relationship('File')
 
 
 class File(Base):
@@ -32,7 +32,7 @@ class File(Base):
 	owner_id = Column(Integer, ForeignKey("user.id"))
 	content = Column(String)
 	directory = Column(Boolean)
-	permissions = relationship('Permission_Assoc', backref=backref("file", lazy="joined"))
+	permissions = relationship('Permission_Assoc')
 	sub_directories = relationship('File')
 
 
@@ -42,7 +42,7 @@ class Permission_Assoc(Base):
 	file_id = Column(Integer, ForeignKey('file.id'), primary_key=True)
 	perm_type = Column(Boolean) # true = read&write, false = read
 
-	user = relationship('User', backref="user_assocs")
+	user = relationship('User')
 
 
 
