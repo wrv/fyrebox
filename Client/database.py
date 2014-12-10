@@ -6,9 +6,10 @@ unique file information and keys for each file
 
 from sqlalchemy import create_engine, Column, Integer, String, Sequence, LargeBinary
 from sqlalchemy.ext.declarative import declarative_base
+DEBUG = False
 
 # create in-memory db -- testing
-engine = create_engine('sqlite:///key.db', echo=True) # TODO: config file ?
+engine = create_engine('sqlite:///key.db', echo=DEBUG) # TODO: config file ?
 
 Base = declarative_base()
 class FileInfo(Base):
