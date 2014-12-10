@@ -53,7 +53,7 @@ def write_message_from_dict(msg_dict):
 #print "REPLY DATA ::::: " , data
 
 #my_connect()
-write_message_from_dict({'operation':'store','username':'david', 'key': 'askjdfiu2iiusadninsadc8ao7yh4iunrfw'})
+#write_message_from_dict({'operation':'store','username':'david', 'key': 'askjdfiu2iiusadninsadc8ao7yh4iunrfw'})
 #data = ssl_sock.read()
 #print "REPLY DATA ::::: " , data
 

@@ -16,22 +16,43 @@ import log_client
 #  - change the prints to logs
 #  - rpc the auth
 
+#Organization of all our operations for authentication, files, and directory
 AUTHOPS = ['register', 'login']
 FILEOPS = ['create', 'delete', 'read', 'write', 'rename', 'perm']
 DIROPS = ['createdir', 'deletedir', 'readdir', 'writedir', 'renamedir', 'permdir']
 
+#Fail and success messages to respond to the client with
+MSGFAIL = '{"message":"failure"}'
+MSGSUCCESS = '{"message":"success"}'
+
+##
+# FileServer(lineReceiver)
+#
+# Class that handles each connection
 class FileServer(LineReceiver):
 
     def __init__(self, users):
         self.state = "UNAUTHENTICATED"
 
+    ##
+    # connectionMade()
+    #
+    # Run whenever the initial condition is made with the server
     def connectionMade(self):
         #log_client.log("Connection made")
         self.sendLine('{"message":"connected"}')
 
+    ##
+    # connectionLost(reason)
+    #
+    # Run whenever the connection is lost with a client
     def connectionLost(self, reason):
         pass
 
+    ##
+    # dataReceived(data)
+    #
+    # Runs after connection is made and data is sent to the server
     def dataReceived(self, data):
         #print data
         if self.state == "UNAUTHENTICATED":
@@ -39,6 +60,10 @@ class FileServer(LineReceiver):
         else:
             self.handle_AUTHENTICATED(data)
 
+    ##
+    # lineReceived(line)
+    #
+    # Runs after connection is made and data is sent to the server
     def lineReceived(self, line):
         #print line
         if self.state == "UNAUTHENTICATED":
@@ -46,7 +71,18 @@ class FileServer(LineReceiver):
         else:
             self.handle_AUTHENTICATED(line)
 
-    #Will authenticate the user based on given info
+    ##
+    # fail()
+    #
+    # User made function to call so the client can receive an error message
+    def fail(self):
+        self.sendLine(MSGFAIL)
+
+    ##
+    # handle_UNAUTHENTICATED()
+    #
+    # If the state is UNAUTHENTICATED then this function will try to authenticate
+    # the user by either making a new user or logging in
     def handle_UNAUTHENTICATED(self, message):
         try:
             parsedjson = json.loads(message)
@@ -56,122 +92,175 @@ class FileServer(LineReceiver):
             return
 
         token = None
-        
+        rootdir = None
+
         if op not in AUTHOPS:
-            self.sendLine('{"message":"failure"}')
+            self.fail()
             return
 
         if "register" == op:
             print "registering"
-            token = register(parsedjson['username'], parsedjson['password'])
+            (token, rootdir) = register(parsedjson['username'], parsedjson['password'])
 
         if "login" == op:
             print "logging in"
-            token = login(parsedjson['username'], parsedjson['password'])
+            (token, rootdir) = login(parsedjson['username'], parsedjson['password'])
+
         
         if token:
-            print "token successful"
-            response = {}
-            response['username'] = parsedjson['username']
-            response['token'] = token
-            response['timestamp'] = time.time()
-            self.sendLine(json.dumps(response))
-            self.state = "AUTHENTICATED"
+            if rootdir:
+                print "token successful"
+                response = {}
+                response['username'] = parsedjson['username']
+                response['token'] = token
+                response['timestamp'] = time.time()
+                response['rootdir'] = rootdir
+                self.sendLine(json.dumps(response))
+                self.state = "AUTHENTICATED"
         else:
             print "token unsuccessful"
-            self.sendLine('{"message":"failure"}')
+            self.fail()
             return
 
+    ##
+    # handle_AUTHENTICATED()
+    #
+    # If the state is AUTHENTICATED then this function will do various operations
+    # on the server for files and databases
     def handle_AUTHENTICATED(self, message):
         try:
             parsedjson = json.loads(message)
             op = parsedjson['operation']
         except:
-            print "error in json. msg: " + message
+            print "error in json 1. msg: " + message
             return
 
-        if op not in FILEOPS or op not in DIROPS:
-            self.sendLine('{"message":"failure"}')
+        if op not in FILEOPS and op not in DIROPS:
+            print "error in json 2. msg: " + message
+            self.fail()
             return
 
         try:
             username = parsedjson['username']
             token = parsedjson['token']
         except:
-            print "error in json. msg: " + message
+            print "error in json 3. msg: " + message
             return
 
-        #for organizational structure
+        #### File Operations
         if op in FILEOPS:
-            filename = parsedjson['filename']
+            try:
+                filename = parsedjson['filename']
+            except:
+                print "error in json 4. msg: " + message
+                self.fail()
+                return
 
             if "create" == op:
-                if fileops.create(filename, username, token):
-                    self.sendLine('{"message":"success"}')
+                try:
+                    dirname = parsedjson['dirname']
+                except:
+                    self.fail()
                     return
-            elif "delete" == op:
-                if fileops.delete(filename, username, token):
-                    self.sendLine('{"message":"success"}')
+
+                output = fileops.create(filename, dirname, username, token)
+                if output:
+                    response = {}
+                    response['message'] = 'success'
+                    response['fileid'] = output
+                    self.sendLine(json.dumps(response))
                     return
+                self.fail()
+                return
+
+            #All following operations will rely on the fileid
+            fileid = parsedjson['fileid']
+            if "delete" == op:
+                if fileops.delete(fileid, filename, username, token):
+                    self.sendLine(MSGSUCCESS)
+                    return
+
             elif "read" == op:
-                if fileops.read(filename, username, token):
-                    self.sendLine('{"message":"success"}')
+                output = fileops.read(fileid, filename, username, token)
+                if output:
+                    response = {}
+                    response['message'] = 'success'
+                    response['content'] = output
+                    self.sendLine(json.dumps(response))
                     return
+
             elif "write" == op:
                 content = parsedjson['content']
-                if fileops.write(filename, content, username, token):
-                    self.sendLine('{"message":"success"}')
+                if fileops.write(fileid, filename, content, username, token):
+                    self.sendLine(MSGSUCCESS)
                     return
             elif "rename" == op:
-                newname = parsedjson['newname']
-                if fileops.rename(filename, newname, username, token):
-                    self.sendLine('{"message":"success"}')
+                if fileops.rename(fileid, filename, username, token):
+                    self.sendLine(MSGSUCCESS)
                     return
             elif "perm" == op:
                 perms = parsedjson['permissions']
-                if fileops.perm(filename, perms, username, token):
-                    self.sendLine('{"message":"success"}')
+                if fileops.perm(fileid, filename, perms, username, token):
+                    self.sendLine(MSGSUCCESS)
                     return
 
+        #### Directory Operations
         if op in DIROPS:
             dirname = parsedjson['dirname']
 
             if "createdir" == op:
-                if dirops.createdir(dirname, username, token):
-                    self.sendLine('{"message":"success"}')
+                output = dirops.createdir(dirname, username, token)
+                if output:
+                    response = {}
+                    response['message'] = 'success'
+                    response['dirid'] = output
+                    self.sendLine(json.dumps(response))
                     return
-            elif "deletedir" == op:
-                if dirops.deletedir(dirname, username, token):
-                    self.sendLine('{"message":"success"}')
+                self.fail()
+                return
+
+            #all the following operations will rely on dirid
+            dirid = parsedjson['dirid']
+            if "deletedir" == op:
+                if dirops.deletedir(dirid, dirname, username, token):
+                    self.sendLine(MSGSUCCESS)
                     return
             elif "readdir" == op:
-                if dirops.readdir(dirname, username, token):
-                    self.sendLine('{"message":"success"}')
+                content = dirops.readdir(dirid, dirname, username, token)
+                if content:
+                    response = {}
+                    response['message'] = 'success'
+                    response['content'] = output
+                    self.sendLine(json.dumps(response))
                     return
             elif "renamedir" == op:
-                newname = parsedjson['newname']
-                if dirops.renamedir(dirname, newname, username, token):
-                    self.sendLine('{"message":"success"}')
+                if dirops.renamedir(dirid, dirname, username, token):
+                    self.sendLine(MSGSUCCESS)
                     return
             elif "permdir" == op:
                 perms = parsedjson['permissions']
-                if dirops.permdir(dirname, perms, username, token):
-                    self.sendLine('{"message":"success"}')
+                if dirops.permdir(dirid, dirname, perms, username, token):
+                    self.sendLine(MSGSUCCESS)
                     return
 
 
-        self.sendLine('{"message":"failure"}')
+        self.fail()
         return
 
-
+##
+# FileServerFactor()
+#
+# class that will be run to set up a new fileserver instance. Kind of like a factory ;)
 class FileServerFactory(Factory):
     def __init__(self):
         self.users = {} # maps user names to Chat instances
 
     def buildProtocol(self, addr):
-        print addr
+        #print addr
         return FileServer(self.users)
 
+
+##Main code
 certData = getModule(__name__).filePath.sibling('server.pem').getContent()
 certificate = ssl.PrivateCertificate.loadPEM(certData)
 reactor.listenSSL(10023, FileServerFactory(), certificate.options())

@@ -42,3 +42,6 @@ nosetests.xml
 # Mac
 .DS_Store
 *.DS_Store
+
+# ignore databases
+*.db
