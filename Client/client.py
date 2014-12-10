@@ -64,7 +64,7 @@ def read(file_name):
     print message
     sslSocket.write(json.dumps(message))
     response = json.loads(sslSocket.read())
-    print response
+    print "CONTENT OF FILE ", file_name, " = ", response['content']
 def main():
     serverConnection()
     register("asdfasdf", "test")
