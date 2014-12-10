@@ -63,11 +63,11 @@ class FileServer(LineReceiver):
 
         if "register" == op:
             print "registering"
-            token = auth.register(parsedjson['username'], parsedjson['password'])
+            token = register(parsedjson['username'], parsedjson['password'])
 
         if "login" == op:
             print "logging in"
-            token = auth.login(parsedjson['username'], parsedjson['password'])
+            token = login(parsedjson['username'], parsedjson['password'])
         
         if token:
             print "token successful"
