@@ -121,6 +121,8 @@ def login():
         response = sslSocket.read()
         response = json.loads(response)
         token = response['token']
+        print response
         print token
+
 if __name__ == "__main__":
 	main()
