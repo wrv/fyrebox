@@ -69,6 +69,7 @@ class FileServer(LineReceiver):
         if "login" == op:
             print "logging in"
             (token, rootdir) = auth.login(parsedjson['username'], parsedjson['password'])
+
         
         if token:
             print "token successful"
