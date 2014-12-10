@@ -1,163 +1,178 @@
-"""server.py file
-
-This file contains the server descriptions
-ref: https://docs.python.org/2/library/ssl.html#ssl-security
-"""
-
-import socket 
-import asyncore
-
-import ssl
 import json
+import time
+
+from twisted.internet.protocol import Factory
+from twisted.protocols.basic import LineReceiver
+from twisted.internet import reactor, ssl
+from twisted.python.modules import getModule
+
 from settings import SERVER_NAME, SERVER_PORT, SERVER_BACKLOG, DEBUG
 from database import PublicKey, engine
 from sqlalchemy.orm import sessionmaker
 
 Session = sessionmaker(bind=engine) # session class
-session = Session() # TODO change to class, one session per connection
+dbsession = Session() # TODO change to class, one session per connection
 
 
-#class RequestHandler(asyncore.dispatcher_with_send):
-    #def handle_read(self):
-        #data = self.recv(8192)
-        #if data:
-            #self.send(data)
 
+#Fail and success messages to respond to the client with
+MSGFAIL = '{"message":"failure"}'
+MSGSUCCESS = '{"message":"success"}'
 
-        #newsocket, fromaddr = bindsocket.accept()
-        #connstream = ssl.wrap_socket(newsocket, 
-                                #server_side=True,
-                                #certfile="certs/server.crt",
-                                #keyfile="certs/server.key",
-                                #ssl_version=ssl.PROTOCOL_SSLv23)
-    #try:
-        #handle_connection(connstream)
-    #finally:
-        #connstream.shutdown(socket.SHUT_RDWR)
-        #connstream.close()
+##
+# FileServer(lineReceiver)
+#
+# Class that handles each connection
+class FileServer(LineReceiver):
 
-#class FyreBoxCloudServer(asyncore.dispatcher):
-    #def __init__(self, host, port):
-        #asyncore.dispatcher.__init__(self)
-        #self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
-        #self.set_reuse_addr()
-        #self.bind((host, port))
-        #self.listen(SERVER_BACKLOG)
-    #def handle_accept(self):
-        #pair = self.accept()
-        #if pair is not None:
-            #sock, addr = pair
-            #print 'Incoming connection from %s' % repr(addr)
-            #handler = RequestHandler(sock)
+    def __init__(self, users):
+        self.DEBUG = True
 
-def process_data(connstream, data):
-    print "process_data:", data
+    ##
+    # connectionMade()
+    #
+    # Run whenever the initial condition is made with the server
+    def connectionMade(self):
+        self.sendLine('{"message":"connected"}')
 
-    data  = cleanup(data)
-    if data is None: return False
-    operation = data['operation'].lower()
+    ##
+    # connectionLost(reason)
+    #
+    # Run whenever the connection is lost with a client
+    def connectionLost(self, reason):
+        pass
 
-    if operation == 'store':
-        if ('username' not in data) or ('key' not in data):
-            connstream.write("Store requires username and key fields\r\n")
+    ##
+    # dataReceived(data)
+    #
+    # Runs after connection is made and data is sent to the server
+    def dataReceived(self, data):
+        #print data
+        self.handle_UNAUTHENTICATED(data)
+
+    ##
+    # lineReceived(line)
+    #
+    # Runs after connection is made and data is sent to the server
+    def lineReceived(self, line):
+        #print line
+        self.handle_UNAUTHENTICATED(line)
+
+    ##
+    # fail()
+    #
+    # User made function to call so the client can receive an error message
+    def fail(self):
+        self.sendLine(MSGFAIL)
+
+    ##
+    # handle_UNAUTHENTICATED()
+    #
+    # If the state is UNAUTHENTICATED then this function will try to authenticate
+    # the user by either making a new user or logging in
+    def handle_UNAUTHENTICATED(self, data):
+        print "process_data:", data
+        data = self.cleanup(data)
+        if data is None: return False
+        operation = data['operation'].lower()
+
+        if operation == 'store':
+            if ('username' not in data) or ('key' not in data):
+                self.sendLine("Store requires username and key fields\r\n")
+                return False
+
+            successful = self.store(data['username'], data['key'])
+            if successful:
+                self.sendLine("OK")
+            else:
+                self.sendLine("FAILED")
+
             return False
 
-        successful = store(data['username'], data['key'])
-        if successful:
-            connstream.write("OK")
-        else:
-            connstream.write("FAILED")
+        elif operation == 'retrieve':
+            if 'username' not in data:
+                self.sendLine("Retrieve requires username field\r\n")
+                return False
 
-        return False
-
-    elif operation == 'retrieve':
-        if 'username' not in data:
-            connstream.write("Retrieve requires username field\r\n")
+            key = self.retrieve(data['username'])
+            if key is None:
+                self.sendLine("User not found")
+            else:
+                self.sendLine(key)
             return False
 
-        key = retrieve(data['username'])
-        if key is None:
-            connstream.write("User not found")
-        else:
-            connstream.write(key)
-        return False
+        elif operation == 'list':
+            # only for debug
+            if self.DEBUG:
+                self.sendLine(str(list()))
+                return False
 
-    elif operation == 'list':
-        # only for debug
-        if DEBUG:
-            connstream.write(str(list()))
+        self.sendLine("OPERATION NOT SUPPORTED")
+
+        return False # finished with client
+
+    @staticmethod
+    def cleanup(data):
+        """Cleans received information and returns a cleaned-up dictionary"""
+        data = data.strip()
+        # make sure data is json
+        try:
+            data_dict = json.loads(data)
+        except:
+            print ":ERROR "
+            return None
+
+        if not isinstance(data_dict, dict):
+            return None
+
+        if 'operation' not in data_dict:
+            return None
+
+        return data_dict
+
+    @staticmethod
+    def store(username_, key_):
+        """If username is not in database, adds key and username to public key database"""
+        try:
+            pub_key = PublicKey(username=username_, key=key_)
+            dbsession.add(pub_key)
+            return True
+        except:
             return False
 
-    connstream.write("OPERATION NOT SUPPORTED")
+    @staticmethod
+    def list():
+        """ For debugging purposes only.
+        Lists all keys in db"""
+        time.sleep(10)
+        return dbsession.query(PublicKey).all()
 
-    return False # finished with client
+    @staticmethod
+    def retrieve(username_):
+        """If username is in database, returns saved public key. None otherwise"""
+        try:
+            user = dbsession.query(PublicKey).filter_by(username=username_).first()
+            return user
+        except:
+            return None
 
-def cleanup(data):
-    """Cleans received information and returns a cleaned-up dictionary"""
-    data = data.strip()
-    # make sure data is json
-    try:
-        data_dict = json.loads(data)
-    except:
-        print ":ERROR "
-        return None
+        
 
-    if not isinstance(data_dict, dict):
-        return None
+##
+# FileServerFactor()
+#
+# class that will be run to set up a new fileserver instance. Kind of like a factory ;)
+class FileServerFactory(Factory):
+    def __init__(self):
+        self.users = {} # maps user names to Chat instances
 
-    if 'operation' not in data_dict:
-        return None
-
-    return data_dict
-
-def store(username_, key_):
-    """If username is not in database, adds key and username to public key database"""
-    try:
-        pub_key = PublicKey(username=username_, key=key_)
-        session.add(pub_key)
-        return True
-    except:
-        return False
-
-def list():
-    """ For debugging purposes only.
-    Lists all keys in db"""
-    return session.query(PublicKey).all()
-
-def retrieve(username_):
-    """If username is in database, returns saved public key. None otherwise"""
-    try:
-        user = session.query(PublicKey).filter_by(username=username_).first()
-        return user
-    except:
-        return None
+    def buildProtocol(self, addr):
+        #print addr
+        return FileServer(self.users)
 
 
-def handle_connection(connstream):
-    data = connstream.read()
-    # null data means the client is finished with us
-    while data:
-        if not process_data(connstream, data):
-            break
-        data = connstream.read()
-
-
-bindsocket = socket.socket()
-bindsocket.bind((SERVER_NAME,  SERVER_PORT))
-bindsocket.listen(SERVER_BACKLOG)
-
-
-while True:
-    newsocket, fromaddr = bindsocket.accept()
-    connstream = ssl.wrap_socket(newsocket, 
-                                server_side=True,
-                                certfile="certs/server.crt",
-                                keyfile="certs/server.key",
-                                ssl_version=ssl.PROTOCOL_SSLv23)
-    try:
-        handle_connection(connstream)
-    finally:
-        connstream.shutdown(socket.SHUT_RDWR)
-        connstream.close()
-
-
+##Main code
+certData = getModule(__name__).filePath.sibling('server.pem').getContent()
+certificate = ssl.PrivateCertificate.loadPEM(certData)
+reactor.listenSSL(10023, FileServerFactory(), certificate.options())
+reactor.run()
