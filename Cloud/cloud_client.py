@@ -72,6 +72,7 @@ data = ssl_sock.read()
 
 while data:
     print "REPLY DATA ::::: " , data
+    print ssl_sock.gettimeout()
     data = ssl_sock.read()
 
 # note that closing the SSLSocket will also close the underlying socket

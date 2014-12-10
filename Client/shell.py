@@ -23,7 +23,7 @@ class FyreBoxShell(cmd.Cmd):
     prompt = 'fyrebox> '
     undoc_header = 'Alias commands'
     doc_header = 'Commands (type help <command> for more information)'
-    MIN_FILENAME_LEN = 5
+    MIN_FILENAME_LEN = 2
     SPECIAL_COMMANDS = ['?', 'help', 'eof', 'exit', 'quit']
     logged_in = False
 
@@ -93,7 +93,11 @@ class FyreBoxShell(cmd.Cmd):
             return
         filename = filename.strip()
         try:
-            read(filename)
+            results = read(filename)
+            self.print_success( "CONTENT : \n"
+                                "============"
+                    )
+            print results['content']
         except:
             self.print_error("Sorry. Reading content failed. "
                     "Please retry")
@@ -114,14 +118,10 @@ class FyreBoxShell(cmd.Cmd):
             register(username, password)
             self.print_success('User with username: ' + username + ""
                 " successfully registered. ")
-            try:
-                login(username, password)
-                self.print_success("Auto-login succeeded. You are now logged in.")
-                self.logged_in = True
-            except:
-                self.print_error("Auto-login failed.")
+            # registration automatically logs in
+            self.logged_in = True
         except Exception as e:
-            print e
+            #print e
             self.print_error('An error occurred. Please retry')
 
 
@@ -144,7 +144,7 @@ class FyreBoxShell(cmd.Cmd):
             self.print_success('User with username: ' + username + ""
                 " successfully logged in. ")
             self.logged_in = True
-        except:
+        except Exception as e:
             self.print_error('An error occurred. Please retry')
 
     #----- util functions -----

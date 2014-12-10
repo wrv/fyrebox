@@ -22,8 +22,8 @@ def helpme(comSplit):
 
 def create(file_name):
     file_key = os.urandom(32)
-    print file_key
-    print len(file_key)
+    #print file_key
+    #print len(file_key)
     open(file_name, 'a').close()
     enc_file_name = encrypt(file_name, file_key)
     
@@ -35,11 +35,19 @@ def create(file_name):
     message['dirname'] = current_directory
     sslSocket.write(json.dumps(message))
     response = json.loads(sslSocket.read())
+
+    if 'message' in response:
+        if response['message'] == 'failure':
+            raise ValueError
+    #print response
+
     unique_id = response['fileid'] 
     encoded_file_key = file_key.encode('hex')
     new_file = FileInfo(file_name = unicode(file_name), unique_id = unique_id, file_key = encoded_file_key)
     session.add(new_file)
     session.commit()    
+    
+    return response
 
 def write(file_name, content):
     file_key = session.query(FileInfo).filter_by(file_name = file_name)
@@ -50,10 +58,14 @@ def write(file_name, content):
     message['filename'] = encrypt(file_name, file_key.first().file_key.decode('hex'))
     message['fileid'] =  file_key.first().unique_id
     message['content'] = content
-    print message
+
     sslSocket.write(json.dumps(message))
     response = json.loads(sslSocket.read())
-    print response
+    if 'message' in response:
+        if response['message'] == 'failure':
+            raise ValueError
+    #print response
+    return response
 
 def read(file_name):
     file_key = session.query(FileInfo).filter_by(file_name = file_name)
@@ -63,10 +75,15 @@ def read(file_name):
     message['token'] = token
     message['filename'] = encrypt(file_name, file_key.first().file_key.decode('hex'))
     message['fileid'] =  file_key.first().unique_id
-    print message
+    #print message
     sslSocket.write(json.dumps(message))
     response = json.loads(sslSocket.read())
-    print response
+
+    if 'message' in response:
+        if response['message'] == 'failure':
+            raise ValueError
+    #print response
+    return response
 
 def main():
     serverConnection()
@@ -90,7 +107,9 @@ def login(user, password):
     username = user
     response = authHelper(username, password, "login")
     if 'message' in response:
-        return
+        if response['message'] == 'failure':
+            raise ValueError
+
     token = response['token']
     current_directory = response['rootdir']
     os.chdir(current_directory)
@@ -103,7 +122,9 @@ def register(user, password):
     username = user
     response = authHelper(username, password, "register")
     if 'message' in response:
-        return
+        if response['message'] == 'failure':
+            raise ValueError
+
     token = response['token']
     current_directory = response['rootdir']
     os.mkdir(current_directory)

@@ -136,6 +136,7 @@ class FileServer(LineReceiver):
         try:
             pub_key = PublicKey(username=username_, key=key_)
             dbsession.add(pub_key)
+            dbsession.commit()
             return True
         except:
             return False
@@ -174,5 +175,6 @@ class FileServerFactory(Factory):
 ##Main code
 certData = getModule(__name__).filePath.sibling('server.pem').getContent()
 certificate = ssl.PrivateCertificate.loadPEM(certData)
+
 reactor.listenSSL(10023, FileServerFactory(), certificate.options())
 reactor.run()
