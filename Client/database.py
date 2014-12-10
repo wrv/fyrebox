@@ -4,7 +4,7 @@ This file contains information for FileInfo table which holds the
 unique file information and keys for each file
 """
 
-from sqlalchemy import create_engine, Column, Integer, String, Sequence
+from sqlalchemy import create_engine, Column, Integer, String, Sequence, LargeBinary
 from sqlalchemy.ext.declarative import declarative_base
 
 # create in-memory db -- testing
@@ -20,11 +20,11 @@ class FileInfo(Base):
     __tablename__ = 'filekeys'
     id = Column(Integer, Sequence('file_seq')) #, primary_key=True)
     file_name = Column(String)
-    unique_id = Column(Integer, primary_key=True)
-    file_key = Column(String(32))
+    unique_id = Column(String, primary_key=True)
+    file_key = Column(String)
 
     def __repr__(self):
-        return "<User( unique_id='%d', file_name='%s',  key='%s')>" % (
+        return "<User( unique_id='%s', file_name='%s',  key='%s')>" % (
                 self.unique_id, self.file_name, self.file_key)
 
 
