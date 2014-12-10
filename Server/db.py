@@ -19,7 +19,7 @@ class User(Base):
 	salt = Column(String(128))
 	token = Column(String(128))
 	rootdir = Column(String(128), default="/")
-	permissions = relationship('Permission', backref=backref("user", lazy="joined"))
+	permissions = relationship('Permission_Assoc', backref=backref("user", lazy="joined"))
 	files = relationship('File', backref=backref("user", lazy="joined"))
 
 
