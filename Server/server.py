@@ -182,7 +182,7 @@ class FileServer(LineReceiver):
 
             elif "read" == op:
                 output = fileops.read(fileid, filename, username, token)
-                if output:
+                if False != output:
                     response = {}
                     response['message'] = 'success'
                     response['content'] = output

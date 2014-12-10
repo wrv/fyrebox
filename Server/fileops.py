@@ -23,23 +23,24 @@ def create(filename, dirname, username, token):
 	
 	#setup of the databases
 	userdb = user_setup()
-	user = userdb.query(User).filter(User.name == username).one()
+	user = userdb.query(User).filter(User.name == username).first()
 	filedb = file_setup()
 	permdb = permission_setup()
 
 	#get a reference to the parent directory we're working in
-	parent_dir = filedb.query(File).
+	parent_dir = 0
 
 	#generate the fileID from various variables
 	fileID = hashlib.sha256(username + token + filename + dirname + str(time.time())+ str(random.random())).hexdigest()
 	#create the file
-	newfile = File(identifier=fileID, filename=filename, owner_id=user.id, content="", directory=False)
-
-	#create the permissions for the file
-	newperm = Permission(user_id=user.id, file_id=newfile.id, perm_type=True)
-
+	newfile = File(identifier=fileID, filename=filename, parent_id=parent_dir, owner_id=user.id, content="", directory=False)
 	filedb.add(newfile)
 	filedb.commit()
+	print '\n\nTESTING CREATE', newfile.id, '\n\n'
+	#create the permissions for the file
+	newperm = Permission_Assoc(user_id=user.id, file_id=newfile.id, perm_type=True)
+
+	
 	permdb.add(newperm)
 	permdb.commit()
 
@@ -60,16 +61,16 @@ def delete(filename, username, token):
 		return False
 	#check permissions
 	userdb = user_setup()
-	user = userdb.query(User).filter(User.name == username).one()
+	user = userdb.query(User).filter(User.name == username).first()
 
 	filedb = file_setup()
-	file = filedb.query(File).filter(File.filename == filename).one()
+	file = filedb.query(File).filter(File.filename == filename).first()
 	
 	permdb = permission_setup()
 	if file:
 		permission = permdb.query(Permission_Assoc).get((user.id, file.id))
 
-		if permission not None:
+		if permission:
 			if permfile.perm_type: #if they have write permissions
 				file.delete()
 				filedb.commit()
@@ -86,21 +87,24 @@ def delete(filename, username, token):
 # Checks the token, check read permission on file. Send json data
 # of {op: read, filename=name, content=content, perm=(username, E_pk(key))}
 #
-def read(filename, username, token):
+def read(fileid, filename, username, token):
 	if not check_token(username, token):
 		return False
 
 	
 	userdb = user_setup()
-	user = userdb.query(User).filter(User.name == username).one()
+	user = userdb.query(User).filter(User.name == username).first()
 	filedb = file_setup()
-	datfile = filedb.query(File).filter(File.filename == filename).one()
+
+	datfile = filedb.query(File).filter(File.identifier == fileid).first()
 	permdb = permission_setup()
 	if datfile: 
+		print 'FILE ACCESSED' 
 		permfile = permdb.query(Permission_Assoc).get((user.id, datfile.id))
 
 		# if in the permissions database they have the permission to read
 		if permfile:
+			print 'LOL'
 			return datfile.content
 
 	return False
@@ -117,21 +121,22 @@ def read(filename, username, token):
 # Checks the token, check write permission on file, overwrite content with
 # new content, respond with success/failure
 #
-def write(filename, content, username, token):
+def write(fileid, filename, content, username, token):
 	if not check_token(username, token):
 		return False
 
 	#check permission
 	userdb = user_setup()
-	user = userdb.query(User).filter(User.name == username).one()
+	user = userdb.query(User).filter(User.name == username).first()
 	filedb = file_setup()
-	datfile = filedb.query(File).filter(File.filename == filename).one()
+	datfile = filedb.query(File).filter(File.identifier == fileid).first()
 	permdb = permission_setup()
 	if datfile:
 		permfile = permdb.query(Permission_Assoc).get((user.id, datfile.id))
 
 		if permfile.perm_type:
 			datfile.content = content
+			filedb.commit()
 			return True
 
 	return False
