@@ -2,17 +2,21 @@
 
 This file contains the server descriptions
 ref: https://docs.python.org/2/library/ssl.html#ssl-security
-and Willy's server code
 """
 
 import socket 
 import ssl
 import json
 from settings import SERVER_NAME, SERVER_PORT, SERVER_BACKLOG, DEBUG
+from database import PublicKey, engine
+from sqlalchemy.orm import sessionmaker
+
+Session = sessionmaker(bind=engine) # session class
+session = Session() # TODO change to class, one session per connection
 
 
-def do_something(connstream, data):
-    print "do_something:", data
+def process_data(connstream, data):
+    print "process_data:", data
 
     data  = cleanup(data)
     if data is None: return False
@@ -33,12 +37,12 @@ def do_something(connstream, data):
 
     elif operation == 'retrieve':
         if 'username' not in data:
-            connstream.write("Store requires username field\r\n")
+            connstream.write("Retrieve requires username field\r\n")
             return False
 
         key = retrieve(data['username'])
         if key is None:
-            connstream.write("FAILED")
+            connstream.write("User not found")
         else:
             connstream.write(key)
         return False
@@ -46,6 +50,7 @@ def do_something(connstream, data):
     elif operation == 'list':
         # only for debug
         if DEBUG:
+            connstream.write(str(list()))
             return False
 
     connstream.write("OPERATION NOT SUPPORTED")
@@ -70,29 +75,34 @@ def cleanup(data):
 
     return data_dict
 
-def store(username, key):
+def store(username_, key_):
     """If username is not in database, adds key and username to public key database"""
-    #TODO
-    return False
+    pub_key = PublicKey(username=username_, key=key_)
+    try:
+        session.add(pub_key)
+        return True
+    except:
+        return False
 
 def list():
     """ For debugging purposes only.
     Lists all keys in db"""
-    #TODO
-    pass
+    return session.query(PublicKey).all()
 
-
-def retrieve(username):
-    """If username is in database, returns saved public key"""
-    #TODO
-    return None
+def retrieve(username_):
+    """If username is in database, returns saved public key. None otherwise"""
+    try:
+        user = session.query(PublicKey).filter_by(username=username_).first()
+        return user
+    except:
+        return None
 
 
 def handle_connection(connstream):
     data = connstream.read()
     # null data means the client is finished with us
     while data:
-        if not do_something(connstream, data):
+        if not process_data(connstream, data):
             break
         data = connstream.read()
 
