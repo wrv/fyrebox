@@ -77,8 +77,8 @@ def cleanup(data):
 
 def store(username_, key_):
     """If username is not in database, adds key and username to public key database"""
-    pub_key = PublicKey(username=username_, key=key_)
     try:
+        pub_key = PublicKey(username=username_, key=key_)
         session.add(pub_key)
         return True
     except:
