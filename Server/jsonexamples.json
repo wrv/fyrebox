@@ -36,12 +36,13 @@ Send: {"operation": "write", "username": "<username>", "token": "<token>", "file
 Recieve: {"message":"success"}
 
 ------------Rename File:
+//filename will be the new filename we want to give it
 Send: {"operation": "rename", "username": "<username>", "token": "<token>", "filename":"<filename>", "fileid":"<fileid>"}
 
 Recieve:{"message":"success"} 
 
 ------------Change Permission on File:
-Send: {"operation": "perm", "username": "<username>", "token": "<token>", "filename":"<filename>", "fileid":"<fileid>"}
+Send: {"operation": "perm", "username": "<username>", "token": "<token>", "filename":"<filename>", "fileid":"<fileid>", "permissions":[{"username":["operation": "read/write", "key":"<pk_user encrypted key>"}]]}
 
 Recieve: {"message":"success"}
 
@@ -66,11 +67,12 @@ Send: {"operation": "readdir", "username": "<username>", "token": "<token>", "di
 Recieve: {"message":"success", "content":[<array of dirs and files>]}
 
 ------------Rename Directory:
+//dirname will be the name we want to give it
 Send: {"operation": "renamedir", "username": "<username>", "token": "<token>", "dirname":"<dirname>", "dirid":"<directory id>"}
 
 Recieve: {"message":"success"}
 
 ------------Change Permission of Directory:
-Send: {"operation": "permdir", "username": "<username>", "token": "<token>", "dirname":"<dirname>", "dirid":"<directory id>"}
+Send: {"operation": "permdir", "username": "<username>", "token": "<token>", "dirname":"<dirname>", "dirid":"<directory id>", "permissions":[{"username":["operation": "read/write", "key":"<pk_user encrypted key>"}]]}
 
 Recieve: {"message":"success"}
