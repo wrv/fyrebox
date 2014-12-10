@@ -22,23 +22,25 @@ def create(filename, dirname, username, token):
 		return False
 	
 	#setup of the databases
+	userdb = user_setup()
+	user = userdb.query(User).filter(User.name == username).first()
 	filedb = file_setup()
 	permdb = permission_setup()
-	directorydb = directory_setup()
 
 	#get a reference to the parent directory we're working in
-	parent_dir = directorydb.query(Directory).get(dirname)
+	parent_dir = 0
 
 	#generate the fileID from various variables
 	fileID = hashlib.sha256(username + token + filename + dirname + str(time.time())+ str(random.random())).hexdigest()
 	#create the file
-	newfile = File(fileID, username, filename, "", parent_dir.id)
-
-	#create the permissions for the file
-	newperm = Permission(None, True, username, fileID)
-
+	newfile = File(identifier=fileID, filename=filename, parent_id=parent_dir, owner_id=user.id, content="", directory=False)
 	filedb.add(newfile)
 	filedb.commit()
+	print '\n\nTESTING CREATE', newfile.id, '\n\n'
+	#create the permissions for the file
+	newperm = Permission_Assoc(user_id=user.id, file_id=newfile.id, perm_type=True)
+
+	
 	permdb.add(newperm)
 	permdb.commit()
 
@@ -54,23 +56,25 @@ def create(filename, dirname, username, token):
 # Checks the token, checks write permission on file and all files inside
 # of folder. Remove corresponding file. Respond with success/failure.
 #
-def delete(fileid, filename, username, token):
+def delete(filename, username, token):
 	if not check_token(username, token):
 		return False
 	#check permissions
+	userdb = user_setup()
+	user = userdb.query(User).filter(User.name == username).first()
+
+	filedb = file_setup()
+	file = filedb.query(File).filter(File.filename == filename).first()
+	
 	permdb = permission_setup()
-	permfile = permdb.query(Permission).get(filename)
+	if file:
+		permission = permdb.query(Permission_Assoc).get((user.id, file.id))
 
-	if username in permfile.users_write:
-		filedb = file_setup()
-		delfile = db.query(File).get(filename)
-		#if file does not exist assume it's already deleted
-		if not delfile:
-			return True
-
-		filedb.remove(delfile)
-		filedb.commit()
-		return True
+		if permission:
+			if permfile.perm_type: #if they have write permissions
+				file.delete()
+				filedb.commit()
+				return True
 	return False
 
 ##
@@ -87,15 +91,20 @@ def read(fileid, filename, username, token):
 	if not check_token(username, token):
 		return False
 
-	#check permission
-	permdb = permission_setup()
-	permfile = permdb.query(Permission).get(filename)
+	
+	userdb = user_setup()
+	user = userdb.query(User).filter(User.name == username).first()
+	filedb = file_setup()
 
-	if username in permfile.users_read:
-		filedb = file_setup()
-		datfile = db.query(File).get(filename)
-		#if file exists return its contents
-		if datfile:
+	datfile = filedb.query(File).filter(File.identifier == fileid).first()
+	permdb = permission_setup()
+	if datfile: 
+		print 'FILE ACCESSED' 
+		permfile = permdb.query(Permission_Assoc).get((user.id, datfile.id))
+
+		# if in the permissions database they have the permission to read
+		if permfile:
+			print 'LOL'
 			return datfile.content
 
 	return False
@@ -117,15 +126,17 @@ def write(fileid, filename, content, username, token):
 		return False
 
 	#check permission
+	userdb = user_setup()
+	user = userdb.query(User).filter(User.name == username).first()
+	filedb = file_setup()
+	datfile = filedb.query(File).filter(File.identifier == fileid).first()
 	permdb = permission_setup()
-	permfile = permdb.query(Permission).get(filename)
+	if datfile:
+		permfile = permdb.query(Permission_Assoc).get((user.id, datfile.id))
 
-	if username in permfile.users_write:
-		filedb = file_setup()
-		datfile = db.query(File).get(filename)
-		#if file exists return its contents
-		if datfile:
+		if permfile.perm_type:
 			datfile.content = content
+			filedb.commit()
 			return True
 
 	return False

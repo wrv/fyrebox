@@ -2,7 +2,7 @@ import os
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy import create_engine
-from sqlalchemy import Column, Date, Integer, String, Boolean
+from sqlalchemy import Column, Date, Integer, String, Boolean, Sequence
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -13,78 +13,46 @@ Base = declarative_base()
 
 class User(Base):
 	__tablename__ = "user"
-	name = Column(String, unique=True, primary_key=True)
+	id = Column(Integer, primary_key=True)
+	name = Column(String, unique=True)
 	password_hash = Column(String(128))
 	salt = Column(String(128))
 	token = Column(String(128))
-	rootdir = Column(String(128))
-	
-	def __init__(self, name, password_hash, salt, rootdir):
-		self.name = name
-		self.salt = salt
-		self.password_hash = password_hash
-		self.rootdir = rootdir
-
-class Directory(Base):
-	__tablename__ = "directory"
-	id = Column(String(128), primary_key=True)
-	dirname = Column(String(128))
-	parent_id = Column(String(128), ForeignKey("directory.id"))
-	files = relationship("File", backref="directory")
-	directories = relationship("Directory")
-
-	def __init__(self, id, dirname):
-		self.id = id
-		self.dirname = dirname
+	rootdir = Column(String(128), default="/")
+	permissions = relationship('Permission_Assoc')
+	files = relationship('File')
 
 
 class File(Base):
 	__tablename__ = "file"
-	id = Column(String(128), primary_key=True)
-	filename = Column(String(128), unique=True)
-	owner = Column(String)
-	content = Column(String)
-	dir_id = Column(String(128), ForeignKey("directory.id"))
-	def _get_users_write():
-		return object_session(self).query(Permission).with_parent(self).filter(Permission.perm_type == 'True').all()
-
-	def _get_users_read():
-		return object_session(self).query(Permission).with_parent(self).filter(Permission.perm_type == 'False').all()
-
-
-	users_write = property(_get_users_write)
-	users_read = property(_get_users_read)
-
-	def __init__(self, id, owner, filename, content, dir_id):
-		self.id = id
-		self.owner = owner
-		self.filename = filename
-		self.content = content
-		self.dir_id = dir_id
-
-
-class Permission(Base):
-	__tablename__ = "permission"
 	id = Column(Integer, primary_key=True)
-	file_id = Column(String(128), ForeignKey('file.id'))
-	user_name = Column(String(128), ForeignKey('user.name'))
+	identifier = Column(String, unique=True)
+	filename = Column(String(128), unique=True)
+	parent_id = Column(Integer, ForeignKey("file.id"))
+	owner_id = Column(Integer, ForeignKey("user.id"))
+	content = Column(String)
+	directory = Column(Boolean)
+	permissions = relationship('Permission_Assoc')
+	sub_directories = relationship('File')
+
+
+class Permission_Assoc(Base):
+	__tablename__ = "permission_assoc"
+	user_id = Column(Integer, ForeignKey('user.id'), primary_key=True)
+	file_id = Column(Integer, ForeignKey('file.id'), primary_key=True)
 	perm_type = Column(Boolean) # true = read&write, false = read
 
-	def __init__(self, id, perm_type, user_name, file_id):
-		self.id = id
-		self.file_id = file_id
-		self.perm_type = perm_type
-		self.user_name = user_name
+	user = relationship('User')
 
 
-	#need to setup init and refr methods
+
 
 def setup_dbs(name):
 	#setup jailing here
 
     engine = create_engine('sqlite:///%s.db' % name, echo=DEBUG_DB)
-    Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
+    Base.metadata.create_all(engine)
     return Session()
 
 def user_setup():
@@ -94,16 +62,14 @@ def file_setup():
     return  setup_dbs("file")
 
 def permission_setup():
-    return  setup_dbs("permission")
+    return  setup_dbs("permission_assoc")
 
-def directory_setup():
-	return  setup_dbs("directory")
+
 
 
 if __name__ == '__main__':
         user_setup()
         file_setup()
         permission_setup()
-        directory_setup()
 
 

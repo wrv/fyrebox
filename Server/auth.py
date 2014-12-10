@@ -23,7 +23,7 @@ def newtoken(db, person):
 # 
 def login(username, password):
     db = user_setup()
-    person = db.query(User).get(username)
+    person = db.query(User).filter(User.name == username).first()
 
     if not person:
         return (None, None)
@@ -46,29 +46,30 @@ def login(username, password):
 #
 def register(username, password):
     db = user_setup()
-    person = db.query(User).get(username)
+    person = db.query(User).filter(User.name == username).first()
 
     if person:
     	print username + " person exists"
         return (None, None)
 
-    dirdb = directory_setup()
+    filedb = file_setup()
 
     #now we add the person and add it to the other database
     salt = unicode(os.urandom(8), errors='replace')
     hashpass = unicode(pbkdf2.PBKDF2(password,salt).hexread(32), errors='replace')
     rootdir = hashlib.md5('%s%.10f' % (hashpass, random.random())).hexdigest()
-    dirlol = db.query(Directory).get(rootdir)
+    dirlol = db.query(File).filter(File.filename == rootdir).first()
     if dirlol:
         print "error creating user"
         return (None, None)
 
-    newdir = Directory(rootdir, rootdir)
-    newperson = User(username, hashpass, salt, rootdir)
+    newperson = User(name=username, password_hash=hashpass, salt=salt, rootdir=rootdir)
+    newdir = File(identifier=rootdir, filename=rootdir, owner_id=newperson.id, content="", directory=True)
 
-    dirdb.add(newdir)
+
+    filedb.add(newdir)
     db.add(newperson)
-    dirdb.commit()
+    filedb.commit()
     db.commit()
 
 
@@ -76,7 +77,7 @@ def register(username, password):
 
 def check_token(username, token):
     db = user_setup()
-    person = db.query(User).get(username)
+    person = db.query(User).filter(User.name == username).first()
     if person and person.token == token:
         return True
     else:
