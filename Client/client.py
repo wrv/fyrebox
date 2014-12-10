@@ -19,6 +19,7 @@ current_directory = None
 username = None
 def helpme(comSplit):
     print "stuff"
+
 def create(file_name):
     file_key = os.urandom(32)
     print file_key
@@ -36,10 +37,10 @@ def create(file_name):
     response = json.loads(sslSocket.read())
     unique_id = response['fileid'] 
     encoded_file_key = file_key.encode('hex')
-    new_file = FileInfo(file_name = unicode(file_name), unique_id = unique_id, file_key =
-encoded_file_key)
+    new_file = FileInfo(file_name = unicode(file_name), unique_id = unique_id, file_key = encoded_file_key)
     session.add(new_file)
     session.commit()    
+
 def write(file_name, content):
     file_key = session.query(FileInfo).filter_by(file_name = file_name)
     message = {}
@@ -53,6 +54,7 @@ def write(file_name, content):
     sslSocket.write(json.dumps(message))
     response = json.loads(sslSocket.read())
     print response
+
 def read(file_name):
     file_key = session.query(FileInfo).filter_by(file_name = file_name)
     message = {}
@@ -65,12 +67,14 @@ def read(file_name):
     sslSocket.write(json.dumps(message))
     response = json.loads(sslSocket.read())
     print response
+
 def main():
     serverConnection()
     register("asdfasdf", "test")
     create("testfile")
     write("testfile", "test")
     read("testfile")
+
 def serverConnection():
     global sslSocket
     context = SSL.Context(SSL.SSLv23_METHOD)
@@ -91,6 +95,7 @@ def login(user, password):
     current_directory = response['rootdir']
     os.chdir(current_directory)
     return
+
 def register(user, password):
     global token
     global current_directory
@@ -104,6 +109,7 @@ def register(user, password):
     os.mkdir(current_directory)
     os.chdir(current_directory)
     return
+
 def authHelper(username, password, command):
     message = {}
     message["username"] = username
@@ -112,5 +118,6 @@ def authHelper(username, password, command):
     sslSocket.write(json.dumps(message))
     response = json.loads(sslSocket.read())
     return response
+
 if __name__ == "__main__":
     main()

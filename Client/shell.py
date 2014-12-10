@@ -1,7 +1,8 @@
 import cmd
 import sys
+import getpass
 
-from client import login
+from client import login, register, serverConnection, create, write, read
 
 class FyreBoxShell(cmd.Cmd):
     intro  = 'Welcome to the fyrebox shell.   Type help or ? to list commands.\n'
@@ -14,32 +15,13 @@ class FyreBoxShell(cmd.Cmd):
 
     def __init__(self, *args, **kwargs):
         cmd.Cmd.__init__(self,*args, **kwargs)
-        self.initialize_connections()
+        try:
+            serverConnection()
+        except:
+            self.print_error(
+                    "Sorry. Failed to connect to server."
+                    )
 
-    def initialize_connections(self):
-        #self.initialize_file_server_connection()
-        #self.initialize_file_server_connection()
-        pass
-
-    #def initialize_file_server_connection(self):
-        #'Ran during __init__. Attempts to connect to file server'
-        #context = SSL.Context(SSL.SSLv23_METHOD)
-        #s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-        #s.connect(('localhost', 10023))
-        ##sslSocket = socket.ssl(s)
-        ##response = sslSocket.read()
-        #self.server_socket = socket.ssl(s) # socket to file server
-
-    #def initialize_cloud_server_connection(self):
-        #'Ran during __init__. Attempts to connect to cloud server'
-        #context = SSL.Context(SSL.SSLv23_METHOD)
-        #s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-        #s.connect(('localhost', 10023))
-        ##sslSocket = socket.ssl(s)
-        ##response = sslSocket.read()
-        #self.server_socket = socket.ssl(s) # socket to file server
     
     def do_create(self, arg):
         'Create a new file: CREATE <filename>'
@@ -47,7 +29,11 @@ class FyreBoxShell(cmd.Cmd):
             self.print_error("ERROR. Usage CREATE <filename>. Make sure filename is at "
                     "least %d charachters long" % (self.MIN_FILENAME_LEN))
             return
-        self.print_success("File created")
+        try:
+            create(arg)
+            self.print_success("Create successful.")
+        except:
+            self.print_error("Create failed. Please retry.")
 
     def do_quit(self, arg):
         'Exit from the fyrebox shell: QUIT'
@@ -66,17 +52,98 @@ class FyreBoxShell(cmd.Cmd):
         'Rename a file: RENAME'
         pass
 
-    def do_write(self, arg):
-        'Write file: WRITE'
-        pass
+    def do_write(self, filename):
+        'Write file: WRITE <filename>'
+        if not filename:
+            filename = self.prompt_get('filename')
+        if len(filename.split())> 1:
+            self.print_error("ERROR. Usage WRITE <filename>."
+                    " Do not include content.")
+            return
+        filename = filename.strip()
+        content = self.prompt_get('content')
+        try:
+            write(filename, content)
+            self.print_success("Content successfully written.")
+        except:
+            self.print_error("Sorry. Writing content failed. "
+                    "Please retry")
 
-    def do_register(self, arg):
-        'Register with fyrebox: REGISTER'
-        pass
+    def do_read(self, filename):
+        'Read file: READ <filename>'
+        if not filename:
+            filename = self.prompt_get('filename')
+        if len(filename.split())> 1:
+            self.print_error("ERROR. Usage READ <filename>.")
+            return
+        filename = filename.strip()
+        try:
+            read(filename)
+        except:
+            self.print_error("Sorry. Reading content failed. "
+                    "Please retry")
 
-    def do_login(self, arg):
-        'Login to fyrebox: LOGIN'
-        pass
+    def do_register(self, username):
+        'Register with fyrebox: REGISTER <username>'
+        if not username:
+            username = self.prompt_get('username')
+
+        if len(username.split())> 1:
+            self.print_error("ERROR. Usage REGISTER <username>."
+                    " Do not include password.")
+            return
+        username = username.strip()
+        password = self.prompt_get_password()
+
+        try:
+            register(username, password)
+            self.print_success('User with username: ' + username + ""
+                " successfully registered. ")
+            try:
+                login(username, password)
+                self.print_success("Auto-login succeeded. You are now logged in.")
+                self.logged_in = True
+            except:
+                self.print_error("Auto-login failed.")
+        except Exception as e:
+            print e
+            self.print_error('An error occurred. Please retry')
+
+
+    def do_login(self, username):
+        'Login to fyrebox: LOGIN <username>'
+
+        if len(username) < 1:
+            username = self.prompt_get('username')
+
+        if len(username.split())> 1:
+            self.print_error("ERROR. Usage LOGIN <username>."
+                    " Do not include password.")
+            return
+
+        username = username.strip()
+        password = self.prompt_get_password()
+
+        try:
+            login(username, password)
+            self.print_success('User with username: ' + username + ""
+                " successfully logged in. ")
+            self.logged_in = True
+        except:
+            self.print_error('An error occurred. Please retry')
+
+    #----- util functions -----
+    def prompt_get(self, param):
+        data = None
+        while not data:
+            data = raw_input(param + ' : ')
+        return data
+
+    def prompt_get_password(self):
+        password = None
+        while not password:
+            password = getpass.getpass()
+        return password
 
     def print_error(self, msg):
         "Prints red message with a newline at the end"
@@ -90,6 +157,7 @@ class FyreBoxShell(cmd.Cmd):
     def emptyline(self):
         # do nothing
         pass
+
 
     def precmd(self, line):
         if not self.logged_in:
