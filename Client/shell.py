@@ -5,7 +5,21 @@ import getpass
 from client import login, register, serverConnection, create, write, read
 
 class FyreBoxShell(cmd.Cmd):
-    intro  = 'Welcome to the fyrebox shell.   Type help or ? to list commands.\n'
+    intro = """
+                                                                                                    
+   ;kkkkkkkk,  okk.    dkk .kkkkkkkkkkkkc  ckkkkkkkk..WWWWWWWWWWW:   lWWWWWWWWWWWl  0WW.    KWN     
+   ;kkl'''''.  oOk.    dkk  :kkd''''':kkl  ckkc'''''  :WMW::::0MM:   lMMO:::::OMMl  KMM.    XMW     
+   ;kkc.....   oOk.    dkk  .kko.....;kkl  ckO:.....   NMN''''kMMo.  lMMd     dMMl  OMMx:',oWMK     
+   ;kkkkkkkk;  oOk.    dkk  .kkkkkkkkkkkl  ckkkkkkkk.  NMMMMMMMMMMK  lMMd     dMMl   ,0MMMMMK;      
+   ;kkc.....   oOkdddddkkk  .kko...dkkl.   ckO;.....   NMN.....'MMK  lMMd     dMMl  0MMd,.'lWMN     
+   ;kk:        ,;;;;;;;xkk  .kkl    okkc   ckkl;;;;;   NMWllllloMMK  lMM0lllll0MMl  KMM.    XMW     
+   ,xx;                xkd  .xxc     lkkl  :xxxxxxxx.  KXXXXXXXXXXO  cXXXXXXXXXXXc  OXX.    0XK     
+                     .dkd             ckx.                                                          
+                    .xko               .                                                            
+                     ';                                                                             
+                                                                                                    
+
+    """
     prompt = 'fyrebox> '
     undoc_header = 'Alias commands'
     doc_header = 'Commands (type help <command> for more information)'
@@ -21,6 +35,7 @@ class FyreBoxShell(cmd.Cmd):
             self.print_error(
                     "Sorry. Failed to connect to server."
                     )
+            sys.exit(1)
 
     
     def do_create(self, arg):
