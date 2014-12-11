@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 import cmd
 import sys
 import getpass
@@ -114,15 +115,15 @@ class FyreBoxShell(cmd.Cmd):
         username = username.strip()
         password = self.prompt_get_password()
 
-        try:
-            register(username, password)
-            self.print_success('User with username: ' + username + ""
-                " successfully registered. ")
-            # registration automatically logs in
-            self.logged_in = True
-        except Exception as e:
-            #print e
-            self.print_error('An error occurred. Please retry')
+        #try:
+        register(username, password)
+        self.print_success('User with username: ' + username + ""
+            " successfully registered. ")
+        # registration automatically logs in
+        self.logged_in = True
+        #except Exception as e:
+            ##print e
+            #self.print_error('An error occurred. Please retry')
 
 
     def do_login(self, username):
