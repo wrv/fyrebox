@@ -62,12 +62,17 @@ def createdir(dirname, parentdir, username, token):
 def deletedir(dirid, dirname, username, token):
 	if not check_token(username, token):
 		return False
+
+	resp = {}
 	#check permissions
 	userdb = user_setup()
 	user = userdb.query(User).filter(User.name == username).first()
 
 	filedb = file_setup()
 	directory = filedb.query(File).filter(File.identifier == dirid).first()
+
+	if directory.filename != dirname:
+		resp["new_dirname"] = directory.filename
 	
 	permdb = permission_setup()
 	if directory:
@@ -77,7 +82,8 @@ def deletedir(dirid, dirname, username, token):
 			if permfile.perm_type: #if they have write permissions
 				directory.delete()
 				filedb.commit()
-				return True
+				resp["message"] = "success"
+				return resp
 	return False
 
 ##
@@ -92,7 +98,26 @@ def deletedir(dirid, dirname, username, token):
 # of {op: readdir, dirname=[file names name], perm=(username, E_pk(key))}
 #
 def readdir(dirid, dirname, username, token):
-	pass
+	if not check_token(username, token):
+		return False
+
+	
+	userdb = user_setup()
+	user = userdb.query(User).filter(User.name == username).first()
+	filedb = file_setup()
+
+	directory = filedb.query(File).filter(File.identifier == dirid).first()
+	permdb = permission_setup()
+	if directory: 
+		
+		permfile = permdb.query(Permission_Assoc).get((user.id, directory.id))
+
+		# if in the permissions database they have the permission to read
+		if permfile:
+			
+			return directory.content
+
+	return False
 
 ##
 # renamedir(oldName, newName, username, token)
@@ -106,13 +131,34 @@ def readdir(dirid, dirname, username, token):
 # success or failure
 #
 def renamedir(dirid, dirname, username, token):
-	pass
+	if not check_token(username, token):
+		return False
+
+	resp = {}
+	userdb = user_setup()
+	user = userdb.query(User).filter(User.name == username).first()
+	filedb = file_setup()
+	directory = filedb.query(File).filter(File.identifier == dirid).first()
+
+	permdb = permission_setup()
+	if directory:
+		permfile = permdb.query(Permission_Assoc).get((user.id, directory.id))
+		if permfile.perm_type:
+			if filedb.query(File).filter(File.filename == dirname).first():
+				return False
+			else:
+				directory.filename = dirname
+				filedb.commit()
+				resp["message"] = "success"
+				return resp
+
+	return False
 
 ##
 # permdir(dirname, perms, username, token)
 #
 # dirname - the encrypted name of the dir we want to change permissions on
-# perms - a tuple of user, permission, and secret key
+# perms - (bolean value, other username)
 # username - username of the person
 # token - the token of the person
 #
@@ -120,4 +166,27 @@ def renamedir(dirid, dirname, username, token):
 # encrypted key into the permissions database for the directory
 #
 def permdir(dirid, dirname, perms, username, token):
-	pass
+	if not check_token(username, token):
+		return False
+
+	resp = {}
+	userdb = user_setup()
+	owner = userdb.query(User).filter(User.name == username).first()
+	other_user = userdb.query(User).filter(User.name == perms[1]).first()
+	filedb = file_setup()
+	directory = filedb.query(File).filter(File.identifier == dirid).first()
+	
+	if directory.filename != dirname:
+		resp["new_dirname"] = directory.filename
+
+
+	permdb = permission_setup()
+	if directory:
+		if directory.owner_id == owner.id:
+			permission = Permission_Assoc(user_id=other_user.id, file_id=directory.id, perm_type=perms[0])
+			permdb.add(permission)
+			permdb.commit()
+			resp["message"] = "success"
+			return resp
+
+	return False
