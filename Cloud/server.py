@@ -10,6 +10,8 @@ from settings import SERVER_NAME, SERVER_PORT, SERVER_BACKLOG, DEBUG
 from database import PublicKey, engine
 from sqlalchemy.orm import sessionmaker
 
+from settings import *
+
 Session = sessionmaker(bind=engine) # session class
 dbsession = Session() # TODO change to class, one session per connection
 
@@ -176,5 +178,5 @@ class FileServerFactory(Factory):
 certData = getModule(__name__).filePath.sibling('server.pem').getContent()
 certificate = ssl.PrivateCertificate.loadPEM(certData)
 
-reactor.listenSSL(10023, FileServerFactory(), certificate.options())
+reactor.listenSSL(SERVER_PORT, FileServerFactory(), certificate.options())
 reactor.run()
