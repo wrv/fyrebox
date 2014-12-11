@@ -1,10 +1,13 @@
 from Crypto.Cipher import AES
+from Crypto.PublicKey import RSA
 import base64
 import os
 import time
 from OpenSSL import SSL
 import socket
 import json
+import ssl
+import sys
 from file import *
 from crypto import *
 from database import FileInfo, engine
@@ -19,6 +22,10 @@ current_directory = None
 username = None
 def helpme(comSplit):
     print "stuff"
+
+def print_error( msg):
+    "Prints red message with a newline at the end"
+    sys.stderr.write('\033[91m'+msg+'\033[0m \n')
 
 def create(file_name):
     file_key = os.urandom(32)
@@ -129,6 +136,28 @@ def register(user, password):
     current_directory = response['rootdir']
     os.mkdir(current_directory)
     os.chdir(current_directory)
+
+    # create RSA Key
+    rKey = RSA.generate(2048)
+    f= open('mykey.pem', 'w')
+    f.write(rKey.exportKey('PEM'))
+
+    # send public Key to Cloud
+    #try:
+    pubKey = rKey.publickey().exportKey()
+
+    cloud_connect_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    cloud_ssl_sock = ssl.wrap_socket(cloud_connect_socket,
+            ca_certs="certs/server.crt",
+            cert_reqs=ssl.CERT_REQUIRED)
+    cloud_ssl_sock.connect(('localhost', 10029))
+    cloud_ssl_sock.write(json.dumps(
+        {'operation':'store','username': user,
+            'key': pubKey}))
+    #except Exception as e:
+        #print e
+        #print_error( "Saving Public Key to Cloud Server Failed")
+
     return
 
 def authHelper(username, password, command):
