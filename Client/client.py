@@ -81,7 +81,6 @@ def read(file_name):
     message['token'] = token
     message['filename'] = encrypt(file_name, file_key.first().file_key.decode('hex'))
     message['fileid'] =  file_key.first().unique_id
-    #print message
     sslSocket.write(json.dumps(message))
     response = json.loads(sslSocket.read())
 
@@ -90,15 +89,59 @@ def read(file_name):
             raise ValueError
     response['content'] = decrypt(response['content'],
 file_key.first().file_key.decode('hex'))
+    print response['content']
     return response
 
+def rename(old_file_name, new_file_name):
+    os.rename(old_file_name, new_file_name)
+    first = session.query(FileInfo).filter_by(file_name = old_file_name).first()
+    file_key = first.file_key.decode('hex')
+    unique_id = first.unique_id
+    first.file_name = new_file_name
+    message = {}
+    message['operation'] = "rename"
+    message['username'] = username
+    message['token'] = token
+    message['filename'] = encrypt(new_file_name, file_key)
+    message['fileid'] = unique_id
+    sslSocket.write(json.dumps(message))
+    response = json.loads(sslSocket.read())
+    if 'message' in response:
+        if response['message'] == 'failure':
+            raise ValueError
+    os.rename(old_file_name, new_file_name)
+    session.commit()
+    return response
+
+def delete(file_name):
+    first = session.query(FileInfo).filter_by(file_name = file_name).first()
+    file_key = first.file_key.decode('hex')
+    unique_id = first.unique_id
+    message = {}
+    message['operation'] = "delete"
+    message['username'] = username
+    message['token'] = token
+    message['filename'] = encrypt(file_name, file_key)
+    message['fileid'] = unique_id
+    sslSocket.write(json.dumps(message))
+    response = json.loads(sslSocket.read())
+    if 'message' in response:
+        if response['message'] == 'failure':
+            raise ValueError
+    session.delete(first)
+    os.unlink(file_name)
+    session.commit()
+    return response
+def setupMessage(operation):
+    message = {}
 def main():
     serverConnection()
     register("asdfasdf", "test")
     create("testfile")
     write("testfile", "test")
     read("testfile")
-
+    rename("testfile", "testfile2")
+    delete("testfile2")
 def serverConnection():
     global sslSocket
     context = SSL.Context(SSL.SSLv23_METHOD)
