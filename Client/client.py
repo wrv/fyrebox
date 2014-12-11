@@ -57,8 +57,7 @@ def write(file_name, content):
     message['token'] = token
     message['filename'] = encrypt(file_name, file_key.first().file_key.decode('hex'))
     message['fileid'] =  file_key.first().unique_id
-    message['content'] = content
-
+    message['content'] = encrypt(content, file_key.first().file_key.decode('hex'))
     sslSocket.write(json.dumps(message))
     response = json.loads(sslSocket.read())
     if 'message' in response:
@@ -82,10 +81,10 @@ def read(file_name):
     if 'message' in response:
         if response['message'] == 'failure':
             raise ValueError
-    #print response
+    response['content'] = decrypt(response['content'],
+file_key.first().file_key.decode('hex'))
     return response
 
->>>>>>> ee94536643a865bd94af2bac44b3282e2118e4df
 def main():
     serverConnection()
     register("asdfasdf", "test")
