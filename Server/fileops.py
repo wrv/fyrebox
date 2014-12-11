@@ -187,8 +187,6 @@ def rename(fileid, newfilename, username, token):
 	filedb = file_setup()
 	file = filedb.query(File).filter(File.identifier == fileid).first()
 
-	if file.filename != filename:
-		resp["new_filename"] = file.filename
 
 	permdb = permission_setup()
 	if file:
