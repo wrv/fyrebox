@@ -85,6 +85,8 @@ def read(file_name):
 file_key.first().file_key.decode('hex'))
     return response
 
+def ls():
+    return os.listdir()
 def main():
     serverConnection()
     register("asdfasdf", "test")
