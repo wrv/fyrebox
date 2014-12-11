@@ -21,6 +21,7 @@ def createdir(dirname, parentdir, username, token):
 		return False
 
 	#setup of the databases
+	resp = {}
 	userdb = user_setup()
 	user = userdb.query(User).filter(User.name == username).first()
 	filedb = file_setup()
@@ -47,7 +48,10 @@ def createdir(dirname, parentdir, username, token):
 	permdb.add(newperm)
 	permdb.commit()
 
-	return dir_id
+	resp["message"] = "success"
+	resp["dir_id"] = dir_id
+
+	return resp
 
 ##
 # deletedir(dirname, username, token)
@@ -101,12 +105,16 @@ def readdir(dirid, dirname, username, token):
 	if not check_token(username, token):
 		return False
 
-	
+	resp = {}
 	userdb = user_setup()
 	user = userdb.query(User).filter(User.name == username).first()
 	filedb = file_setup()
 
 	directory = filedb.query(File).filter(File.identifier == dirid).first()
+
+	if directory.filename != dirname:
+		resp["new_dirname"] = directory.filename	
+
 	permdb = permission_setup()
 	if directory: 
 		
@@ -114,8 +122,9 @@ def readdir(dirid, dirname, username, token):
 
 		# if in the permissions database they have the permission to read
 		if permfile:
-			
-			return directory.content
+			resp["content"] = directory.content
+			resp["message"] = "success"
+			return resp
 
 	return False
 
