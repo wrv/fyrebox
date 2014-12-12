@@ -38,4 +38,3 @@ cd -
 echo "Starting fyrebox ... "
 cd Client
 python shell.py
-cd -
