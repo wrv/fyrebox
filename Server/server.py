@@ -5,16 +5,15 @@ from twisted.protocols.basic import LineReceiver
 from twisted.internet import reactor, ssl
 from twisted.python.modules import getModule
 
+from settings import  FILE_SERVER_PORT
+
 from auth import login, register
 import fileops
 import dirops
 import time
-import log_client
-
-##
-# To Do:
-#  - change the prints to logs
-#  - rpc the auth
+import logger
+from logger import log
+#import log_client
 
 #Organization of all our operations for authentication, files, and directory
 AUTHOPS = ['register', 'login']
@@ -25,21 +24,24 @@ DIROPS = ['createdir', 'deletedir', 'readdir', 'writedir', 'renamedir', 'permdir
 MSGFAIL = '{"message":"failure"}'
 MSGSUCCESS = '{"message":"success"}'
 
+#for logging purposes
+curfile = 'server.py'
+
 ##
 # FileServer(lineReceiver)
 #
 # Class that handles each connection
 class FileServer(LineReceiver):
 
-    def __init__(self, users):
+    def __init__(self):
         self.state = "UNAUTHENTICATED"
+        self.user = None
 
     ##
     # connectionMade()
     #
     # Run whenever the initial condition is made with the server
     def connectionMade(self):
-        #log_client.log("Connection made")
         self.sendLine('{"message":"connected"}')
 
     ##
@@ -47,6 +49,7 @@ class FileServer(LineReceiver):
     #
     # Run whenever the connection is lost with a client
     def connectionLost(self, reason):
+        log(curfile, "connection lost with client. reason: " + str(reason))
         pass
 
     ##
@@ -87,6 +90,8 @@ class FileServer(LineReceiver):
         try:
             parsedjson = json.loads(message)
             op = parsedjson['operation']
+            username = parsedjson['username']
+            password = parsedjson['password']
         except:
             print "error in json. msg: " + message
             return
@@ -99,26 +104,27 @@ class FileServer(LineReceiver):
             return
 
         if "register" == op:
-            print "registering"
-            (token, rootdir) = register(parsedjson['username'], parsedjson['password'])
+            log(curfile, "registering")
+            (token, rootdir) = register(username, password)
 
         if "login" == op:
-            print "logging in"
-            (token, rootdir) = login(parsedjson['username'], parsedjson['password'])
+            log(curfile, "logging in user " + username)
+            (token, rootdir) = login(username, password)
 
         
         if token:
             if rootdir:
-                print "token successful"
+                log(curfile, "token successful for user: " + username)
+                self.user = username
                 response = {}
-                response['username'] = parsedjson['username']
+                response['username'] = username
                 response['token'] = token
                 response['timestamp'] = time.time()
                 response['rootdir'] = rootdir
                 self.sendLine(json.dumps(response))
                 self.state = "AUTHENTICATED"
         else:
-            print "token unsuccessful"
+            log(curfile, "token unsuccessful for user: " + username)
             self.fail()
             return
 
@@ -132,11 +138,12 @@ class FileServer(LineReceiver):
             parsedjson = json.loads(message)
             op = parsedjson['operation']
         except:
-            print "error in json 1. msg: " + message
+            log(curfile, "error parsing " + self.user + " json or operation: " + message)
+            self.fail()
             return
 
         if op not in FILEOPS and op not in DIROPS:
-            print "error in json 2. msg: " + message
+            log(curfile, "error parsing " + self.user + " json operation: " + message)
             self.fail()
             return
 
@@ -144,7 +151,8 @@ class FileServer(LineReceiver):
             username = parsedjson['username']
             token = parsedjson['token']
         except:
-            print "error in json 3. msg: " + message
+            log(curfile, "error parsing json username " + self.user + " or token: " + message)
+            self.fail()
             return
 
         #### File Operations
@@ -152,7 +160,7 @@ class FileServer(LineReceiver):
             try:
                 filename = parsedjson['filename']
             except:
-                print "error in json 4. msg: " + message
+                log(curfile, "error parsing " + username + " json filename: " + message)
                 self.fail()
                 return
 
@@ -160,88 +168,135 @@ class FileServer(LineReceiver):
                 try:
                     dirname = parsedjson['dirname']
                 except:
+                    log(curfile, "error parsing json dirname: " + message)
                     self.fail()
                     return
 
                 output = fileops.create(filename, dirname, username, token)
                 if output:
+                    log(curfile, "successfully created file for user " + username)
                     self.sendLine(json.dumps(output))
                     return
+                log(curfile, "error creating file for user " + username)
                 self.fail()
                 return
 
             #All following operations will rely on the fileid
-            fileid = parsedjson['fileid']
+            try:
+                fileid = parsedjson['fileid']
+            except:
+                log(curfile, "error parsing " + self.user + " json fileid: " + message)
+                self.fail()
+                return
+
             if "delete" == op:
                 if fileops.delete(fileid, filename, username, token):
+                    log(curfile, "successfully deleted fileid " + fileid + " for user " + username)
                     self.sendLine(MSGSUCCESS)
                     return
 
             elif "read" == op:
                 output = fileops.read(fileid, filename, username, token)
                 if False != output:
+                    log(curfile, "successfully read fileid " + fileid + " for user " + username)
                     self.sendLine(json.dumps(output))
                     return
 
             elif "write" == op:
-                content = parsedjson['content']
+                try:
+                    content = parsedjson['content']
+                except:
+                    log(curfile, "error parsing content for " + self.user + " json content: " + message)
+                    self.fail()
+                    return
+
                 output = fileops.write(fileid, filename, content, username, token)
                 if False != output:
+                    log(curfile, "successfully wrote to fileid " + fileid + " for user " + username)
                     self.sendLine(json.dumps(output))
                     return
 
             elif "rename" == op:
                 if fileops.rename(fileid, filename, username, token):
+                    log(curfile, "successfully renamed fileid " + fileid + " for user " + username)
                     self.sendLine(MSGSUCCESS)
                     return
 
             elif "perm" == op:
-                perms = parsedjson['permissions']
+                try:
+                    perms = parsedjson['permissions']
+                except:
+                    log(curfile, "error parsing permissions for " + self.user + " json: " + message)
+                    self.fail()
+                    return
+
                 output = fileops.perm(fileid, filename, perms, username, token)
                 if output:
+                    log(curfile, "successfully changed permissions for fileid " + fileid + " for user " + username)
                     self.sendLine(json.dumps(output))
                     return
 
         #### Directory Operations
         if op in DIROPS:
-            dirname = parsedjson['dirname']
+            try:
+                dirname = parsedjson['dirname']
+            except:
+                log(curfile, "error parsing " + self.user + " json dirname: " + message)
+                self.fail()
+                return
+
             if "createdir" == op:
                 parent_dir = parsedjson['parentdir']
                 output = dirops.createdir(dirname, parent_dir, username, token)
                 if output:
-                    response = {}
-                    response['message'] = 'success'
-                    response['dirid'] = output['dir_id']
-                    self.sendLine(json.dumps(response))
+                    log(curfile, "successfully created directory for user " + username)
+                    self.sendLine(json.dumps({'message':'success',
+                                              'data': output}))
                     return
+                log(curfile, "error creating directory for user " + username)
                 self.fail()
                 return
 
             #all the following operations will rely on dirid
-            dirid = parsedjson['dirid']
+            try:
+                dirid = parsedjson['dirid']
+            except:
+                log(curfile, "error parsing " + self.user + " json dirid: " + message)
+                self.fail()
+                return
+
             if "deletedir" == op:
                 if dirops.deletedir(dirid, dirname, username, token):
+                    log(curfile, "successfully deleted dirid " + dirid + " for user " + username)
                     self.sendLine(MSGSUCCESS)
                     return
+
             elif "readdir" == op:
                 output = dirops.readdir(dirid, dirname, username, token)
                 if output:
-                    response = {}
-                    response['message'] = 'success'
-                    response['content'] = output['content']
-                    self.sendLine(json.dumps(response))
+                    log(curfile, "successfully read dirid " + dirid + " for user " + username)
+                    self.sendLine(json.dumps(output))
                     return
+
             elif "renamedir" == op:
                 if dirops.renamedir(dirid, dirname, username, token):
+                    log(curfile, "successfully renamed dirid " + dirid + " for user " + username)
                     self.sendLine(MSGSUCCESS)
                     return
             elif "permdir" == op:
-                perms = parsedjson['permissions']
+                try:
+                    perms = parsedjson['permissions']
+                except:
+                    log(curfile, "error parsing " + self.user + " json permissions: " + message)
+                    self.fail()
+                    return
+
                 if dirops.permdir(dirid, dirname, perms, username, token):
+                    log(curfile, "successfully changed permissions for dirid " + dirid + " for user " + username)
                     self.sendLine(MSGSUCCESS)
                     return
 
-
+        log(curfile, "error parsing json " + message + " for user " + self.user)
         self.fail()
         return
 
@@ -250,17 +305,34 @@ class FileServer(LineReceiver):
 #
 # class that will be run to set up a new fileserver instance. Kind of like a factory ;)
 class FileServerFactory(Factory):
-    def __init__(self):
-        self.users = {} # maps user names to Chat instances
 
     def buildProtocol(self, addr):
-        print "Client connected from: " + str(addr)
-        return FileServer(self.users)
+        log(curfile,"Client connected from: " + str(addr))
+        return FileServer()
 
 
 ##Main code
+logger.main()
 certData = getModule(__name__).filePath.sibling('server.pem').getContent()
 certificate = ssl.PrivateCertificate.loadPEM(certData)
 reactor.listenSSL(10023, FileServerFactory(), certificate.options())
-print "Server is up and running! :D"
+
+intro = """
+                                                                                                
+;kkkkkkkk,  okk.    dkk .kkkkkkkkkkkkc  ckkkkkkkk..WWWWWWWWWWW:   lWWWWWWWWWWWl  0WW.    KWN     
+;kkl'''''.  oOk.    dkk  :kkd''''':kkl  ckkc'''''  :WMW::::0MM:   lMMO:::::OMMl  KMM.    XMW     
+;kkc.....   oOk.    dkk  .kko.....;kkl  ckO:.....   NMN''''kMMo.  lMMd     dMMl  OMMx:',oWMK     
+;kkkkkkkk;  oOk.    dkk  .kkkkkkkkkkkl  ckkkkkkkk.  NMMMMMMMMMMK  lMMd     dMMl   ,0MMMMMK;      
+;kkc.....   oOkdddddkkk  .kko...dkkl.   ckO;.....   NMN.....'MMK  lMMd     dMMl  0MMd,.'lWMN     
+;kk:        ,;;;;;;;xkk  .kkl    okkc   ckkl;;;;;   NMWllllloMMK  lMM0lllll0MMl  KMM.    XMW     
+,xx;                xkd  .xxc     lkkl  :xxxxxxxx.  KXXXXXXXXXXO  cXXXXXXXXXXXc  OXX.    0XK     
+                 .dkd             ckx.                                                          
+                .xko               .                                                            
+                 ';                                                                             
+                                                                                                
+
+"""
+print intro
+print "Server is running"
+log(curfile, "Server is up and running! :D")
 reactor.run()

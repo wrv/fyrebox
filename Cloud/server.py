@@ -6,7 +6,7 @@ from twisted.protocols.basic import LineReceiver
 from twisted.internet import reactor, ssl
 from twisted.python.modules import getModule
 
-from settings import SERVER_NAME, SERVER_PORT, SERVER_BACKLOG, DEBUG
+from settings import  CLOUD_SERVER_PORT
 from database import PublicKey, engine
 from sqlalchemy.orm import sessionmaker
 
@@ -85,20 +85,20 @@ class FileServer(LineReceiver):
 
             successful = self.store(data['username'], data['key'])
             if successful:
-                self.sendLine("OK")
+                self.sendLine(MSGSUCCESS)
             else:
-                self.sendLine("FAILED")
+                self.sendLine(MSGFAIL)
 
             return False
 
         elif operation == 'retrieve':
             if 'username' not in data:
-                self.sendLine("Retrieve requires username field\r\n")
+                self.sendLine(MSGFAIL)
                 return False
 
             key = self.retrieve(data['username'])
             if key is None:
-                self.sendLine("User not found")
+                self.sendLine(MSGFAIL)
             else:
                 response = {}
                 response['key'] = key.key
@@ -108,10 +108,10 @@ class FileServer(LineReceiver):
         elif operation == 'list':
             # only for debug
             if self.DEBUG:
-                self.sendLine(str(list()))
+                self.sendLine(json.dumps(list()))
                 return False
 
-        self.sendLine("OPERATION NOT SUPPORTED")
+        self.sendLine(MSGFAIL)
 
         return False # finished with client
 
@@ -180,5 +180,5 @@ class FileServerFactory(Factory):
 certData = getModule(__name__).filePath.sibling('server.pem').getContent()
 certificate = ssl.PrivateCertificate.loadPEM(certData)
 
-reactor.listenSSL(SERVER_PORT, FileServerFactory(), certificate.options())
+reactor.listenSSL(CLOUD_SERVER_PORT, FileServerFactory(), certificate.options())
 reactor.run()
