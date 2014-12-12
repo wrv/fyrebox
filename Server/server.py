@@ -250,7 +250,8 @@ class FileServer(LineReceiver):
                 output = dirops.createdir(dirname, parent_dir, username, token)
                 if output:
                     log(curfile, "successfully created directory for user " + username)
-                    self.sendLine(json.dumps(output))
+                    self.sendLine(json.dumps({'message':'success',
+                                              'data': output}))
                     return
                 log(curfile, "error creating directory for user " + username)
                 self.fail()

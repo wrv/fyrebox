@@ -172,6 +172,20 @@ class FyreBoxShell(cmd.Cmd):
         except Exception as e:
             self.print_error('An error occurred. Please retry')
 
+    def do_mkdir(self, arg):
+        'Create a directory'
+        if len(arg) < self.MIN_FILENAME_LEN:
+            self.print_error("ERROR. Usage MKDIR <dirname>. Make sure dirname is at "
+                    "least %d charachters long" % (self.MIN_FILENAME_LEN))
+            return
+        try:
+            self.client.create_dir(arg)
+            self.print_success("Create successful.")
+        except:
+            if DEBUG: traceback.print_exc()
+            self.print_error("Create failed. Please retry.")
+
+
     #----- util functions -----
     def prompt_get(self, param):
         data = None

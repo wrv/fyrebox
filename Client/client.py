@@ -154,7 +154,8 @@ class Client(object):
     encoded_dir_key, content_hash = content_hash)
         session.add(new_dir)
         session.commit()
-        return enc_dir_name
+        #return enc_dir_name
+        return response
 
     def read_dir(self,dir_name):
         first = session.query(FileInfo).filter_by(file_name = dir_name).first()
