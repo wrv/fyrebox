@@ -23,3 +23,15 @@ them using pip, run:
 From the root directory, just run
 
     ./quick-fyrebox
+###Long run
+If quick-fyrebox doesn't work (we had some issues) do the following in 3
+different shells.
+
+cd Server
+python server.py
+
+cd Cloud
+python server.py
+
+cd Client
+python client.py
