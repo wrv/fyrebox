@@ -167,10 +167,7 @@ class FileServer(LineReceiver):
 
                 output = fileops.create(filename, dirname, username, token)
                 if output:
-                    response = {}
-                    response['message'] = 'success'
-                    response['fileid'] = output['file_id']
-                    self.sendLine(json.dumps(response))
+                    self.sendLine(json.dumps(output))
                     return
                 self.fail()
                 return
@@ -185,25 +182,26 @@ class FileServer(LineReceiver):
             elif "read" == op:
                 output = fileops.read(fileid, filename, username, token)
                 if False != output:
-                    response = {}
-                    response['message'] = 'success'
-                    response['content'] = output['content']
-                    self.sendLine(json.dumps(response))
+                    self.sendLine(json.dumps(output))
                     return
 
             elif "write" == op:
                 content = parsedjson['content']
-                if fileops.write(fileid, filename, content, username, token):
-                    self.sendLine(MSGSUCCESS)
+                output = fileops.write(fileid, filename, content, username, token)
+                if False != output:
+                    self.sendLine(json.dumps(output))
                     return
+
             elif "rename" == op:
                 if fileops.rename(fileid, filename, username, token):
                     self.sendLine(MSGSUCCESS)
                     return
+
             elif "perm" == op:
                 perms = parsedjson['permissions']
-                if fileops.perm(fileid, filename, perms, username, token):
-                    self.sendLine(MSGSUCCESS)
+                output = fileops.perm(fileid, filename, perms, username, token)
+                if output:
+                    self.sendLine(json.dumps(output))
                     return
 
         #### Directory Operations
@@ -258,7 +256,7 @@ class FileServerFactory(Factory):
         self.users = {} # maps user names to Chat instances
 
     def buildProtocol(self, addr):
-        #print addr
+        print "Client connected from: " + str(addr)
         return FileServer(self.users)
 
 
@@ -266,4 +264,5 @@ class FileServerFactory(Factory):
 certData = getModule(__name__).filePath.sibling('server.pem').getContent()
 certificate = ssl.PrivateCertificate.loadPEM(certData)
 reactor.listenSSL(FILE_SERVER_PORT, FileServerFactory(), certificate.options())
+print "Server is up and running! :D"
 reactor.run()
