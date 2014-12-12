@@ -24,9 +24,13 @@ current_directory = None
 username = None
 password_hash = None
 private_key = None
-def print_error( msg):
+
+
+def print_error(msg):
     "Prints red message with a newline at the end"
-    sys.stderr.write('\033[91m'+msg+'\033[0m \n')
+    sys.stderr.write('\033[91m' + msg + '\033[0m \n')
+
+
 def retrieve_public_key(username):
     message = {}
     message['operation'] = "retrieve"
@@ -36,14 +40,16 @@ def retrieve_public_key(username):
     response = json.loads(response)
     pub_key = RSA.importKey(response['key'])
     return pub_key
+
+
 def create(file_name):
     file_key = os.urandom(32)
     enc_file_name = encrypt(file_name, file_key)
-    
+
     message = setupMessage("create")
     message['filename'] = enc_file_name
     message['dirname'] = current_directory
-    
+
     sslSocket.write(json.dumps(message))
     response = json.loads(sslSocket.read())
 
@@ -51,25 +57,28 @@ def create(file_name):
         if response['message'] == 'failure':
             raise ValueError
 
-    unique_id = response['fileid'] 
+    unique_id = response['fileid']
     encoded_file_key = encrypt(file_key.encode('hex'), password_hash)
     content_hash = hashlib.sha256("").digest().encode('hex')
-    new_file = FileInfo(file_name = file_name, unique_id = unique_id, file_key =
-encoded_file_key, content_hash = content_hash)
+    new_file = FileInfo(file_name=file_name,
+                        unique_id=unique_id,
+                        file_key=encoded_file_key,
+                        content_hash=content_hash)
     session.add(new_file)
-    session.commit()    
-    
+    session.commit()
+
     return response
 
+
 def write(file_name, content):
-    first = session.query(FileInfo).filter_by(file_name = file_name).first()
-    
+    first = session.query(FileInfo).filter_by(file_name=file_name).first()
+
     file_key = get_file_key(file_name)
-    unique_id = get_unique_id(file_name) 
+    unique_id = get_unique_id(file_name)
 
     message = setupMessage("write")
     message['filename'] = encrypt(file_name, file_key)
-    message['fileid'] =  unique_id
+    message['fileid'] = unique_id
     message['content'] = encrypt(content, file_key)
 
     sslSocket.write(json.dumps(message))
@@ -82,14 +91,15 @@ def write(file_name, content):
     session.commit()
     return response
 
+
 def read(file_name):
-    first = session.query(FileInfo).filter_by(file_name = file_name).first()
+    first = session.query(FileInfo).filter_by(file_name=file_name).first()
     file_key = get_file_key(file_name)
     unique_id = get_unique_id(file_name)
-    
+
     message = setupMessage("read")
     message['filename'] = encrypt(file_name, file_key)
-    message['fileid'] =  unique_id
+    message['fileid'] = unique_id
 
     sslSocket.write(json.dumps(message))
     response = json.loads(sslSocket.read())
@@ -105,8 +115,10 @@ def read(file_name):
         raise ValueError
     return response
 
+
 def rename(old_file_name, new_file_name):
-    first = session.query(FileInfo).filter_by(file_name = old_file_name).first()
+    first = session.query(FileInfo).filter_by(
+        file_name=old_file_name).first()
 
     file_key = get_file_key(old_file_name)
     unique_id = get_unique_id(old_file_name)
@@ -124,11 +136,12 @@ def rename(old_file_name, new_file_name):
             raise ValueError
 
     session.commit()
-    
+
     return response
 
+
 def delete(file_name):
-    first = session.query(FileInfo).filter_by(file_name = file_name).first()
+    first = session.query(FileInfo).filter_by(file_name=file_name).first()
     file_key = get_file_key(file_name)
     unique_id = get_unique_id(file_name)
 
@@ -145,13 +158,15 @@ def delete(file_name):
 
     session.delete(first)
     session.commit()
-    
+
     return response
+
+
 def perm(file_name, new_user, permission):
     file_key = get_file_key(file_name)
     unique_id = get_unique_id(file_name)
     public_key = retrieve_public_key(new_user)
-    encrypted_key = public_key.encrypt(file_key,32)[0].encode('hex')
+    encrypted_key = public_key.encrypt(file_key, 32)[0].encode('hex')
     message = setupMessage("perm")
     message['filename'] = encrypt(file_name, file_key)
     message['fileid'] = unique_id
@@ -163,31 +178,41 @@ def perm(file_name, new_user, permission):
         if response['message'] == 'failure':
             raise ValueError
     return
- 
+
+
 def setupMessage(operation):
     message = {}
     message['operation'] = operation
     message['username'] = username
     message['token'] = token
     return message
+
+
 def get_file_key(file_name):
-    first = session.query(FileInfo).filter_by(file_name = file_name).first()
+    first = session.query(FileInfo).filter_by(file_name=file_name).first()
     file_key = decrypt(first.file_key, password_hash).decode('hex')
     return file_key
+
+
 def get_unique_id(file_name):
-    first = first = session.query(FileInfo).filter_by(file_name = file_name).first()
+    first = first = session.query(FileInfo).filter_by(
+        file_name=file_name).first()
     unique_id = first.unique_id
     return unique_id
+
+
 def main():
     serverConnection()
-    #register("test4", "test")
-    #create("testfile4")
-    #write("testfile", "test")
-    #read("testfile")
-    #rename("testfile", "testfile2")
-    #delete("testfile2")
+    # register("test4", "test")
+    # create("testfile4")
+    # write("testfile", "test")
+    # read("testfile")
+    # rename("testfile", "testfile2")
+    # delete("testfile2")
     login("test", "test")
     perm("test", "test2", True)
+
+
 def serverConnection():
     global sslSocket
     global cloud_ssl_sock
@@ -198,11 +223,12 @@ def serverConnection():
     response = sslSocket.read()
     cloud_connect_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     cloud_ssl_sock = ssl.wrap_socket(cloud_connect_socket,
-            ca_certs="certs/server.crt",
-            cert_reqs=ssl.CERT_REQUIRED)
+                                     ca_certs="certs/server.crt",
+                                     cert_reqs=ssl.CERT_REQUIRED)
     cloud_ssl_sock.connect(('localhost', 10029))
     cloud_ssl_sock.read()
-    
+
+
 def login(user, password):
     global token
     global current_directory
@@ -220,6 +246,7 @@ def login(user, password):
     os.chdir(current_directory)
     private_key = RSA.importKey(open('mykey.pem', 'r').read())
     return
+
 
 def register(user, password):
     global token
@@ -240,21 +267,22 @@ def register(user, password):
 
     # create RSA Key
     rKey = RSA.generate(2048)
-    f= open('mykey.pem', 'w')
+    f = open('mykey.pem', 'w')
     f.write(rKey.exportKey('PEM'))
 
     # send public Key to Cloud
-    #try:
+    # try:
     pubKey = rKey.publickey().exportKey()
 
     cloud_ssl_sock.write(json.dumps(
-        {'operation':'store','username': user,
+        {'operation': 'store', 'username': user,
             'key': pubKey}))
-    #except Exception as e:
-        #print e
-        #print_error( "Saving Public Key to Cloud Server Failed")
+    # except Exception as e:
+        # print e
+        # print_error( "Saving Public Key to Cloud Server Failed")
 
     return
+
 
 def authHelper(username, password, command):
     message = {}
