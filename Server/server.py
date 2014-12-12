@@ -1,4 +1,4 @@
-import json
+import json, os
 
 from twisted.internet.protocol import Factory
 from twisted.protocols.basic import LineReceiver
@@ -14,6 +14,7 @@ import time
 import logger
 from logger import log
 #import log_client
+
 
 #Organization of all our operations for authentication, files, and directory
 AUTHOPS = ['register', 'login']
@@ -316,6 +317,13 @@ logger.main()
 certData = getModule(__name__).filePath.sibling('server.pem').getContent()
 certificate = ssl.PrivateCertificate.loadPEM(certData)
 reactor.listenSSL(10023, FileServerFactory(), certificate.options())
+
+def cls():
+    os.system(['clear','cls'][os.name == 'nt'])
+
+# now, to clear the screen
+cls()
+
 
 intro = """
                                                                                                 

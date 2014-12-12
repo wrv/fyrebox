@@ -73,20 +73,20 @@ def delete(fileid, filename, username, token):
 	user = userdb.query(User).filter(User.name == username).first()
 
 	filedb = file_setup()
-	file = filedb.query(File).filter(File.identifier == fileid).first()
+	curfile = filedb.query(File).filter(File.identifier == fileid).first()
 	
 
 	permdb = permission_setup()
-	if file:
-		permfile = permdb.query(Permission_Assoc).get((user.id, file.id))
+	if curfile:
+		permfile = permdb.query(Permission_Assoc).get((user.id, curfile.id))
 
 		if permfile:
 			if permfile.perm_type: #if they have write permissions delete file and it's permissions
-				filedb.delete(file)
+				filedb.delete(curfile)
 				permdb.delete(permfile)
 				permdb.commit()
 				filedb.commit()
-				permdb.query(Permission_Assoc).filter(Permmission_Assoc.file_id == file.id).delete()
+				permdb.query(Permission_Assoc).filter(Permmission_Assoc.file_id == curfile.id).delete()
 				permdb.commit()
 				print "file deleted"
 				return True
@@ -111,20 +111,22 @@ def read(fileid, filename, username, token):
 	user = userdb.query(User).filter(User.name == username).first()
 	filedb = file_setup()
 
-	file = filedb.query(File).filter(File.identifier == fileid).first()
+	curfile = filedb.query(File).filter(File.identifier == fileid).first()
 
-	if file.filename != filename:
-		resp["new_filename"] = file.filename
+	if curfile.filename != filename:
+		resp["new_filename"] = curfile.filename
 
 	permdb = permission_setup()
-	if file: 
+	if curfile: 
 		
-		permfile = permdb.query(Permission_Assoc).get((user.id, file.id))
+		permfile = permdb.query(Permission_Assoc).get((user.id, curfile.id))
 
 		# if in the permissions database they have the permission to read
 		if permfile:
-			resp["content"] = file.content
+			resp["content"] = curfile.content
 			resp["message"] = "success"
+			if curfile.owner_id != user.id:
+				resp["key"] = permfile.key
 			print "file read"
 			return resp
 
@@ -151,17 +153,17 @@ def write(fileid, filename, content, username, token):
 	userdb = user_setup()
 	user = userdb.query(User).filter(User.name == username).first()
 	filedb = file_setup()
-	file = filedb.query(File).filter(File.identifier == fileid).first()
+	curfile = filedb.query(File).filter(File.identifier == fileid).first()
 
-	if file.filename != filename:
-		resp["new_filename"] = file.filename
+	if curfile.filename != filename:
+		resp["new_filename"] = curfile.filename
 
 	permdb = permission_setup()
-	if file:
-		permfile = permdb.query(Permission_Assoc).get((user.id, file.id))
+	if curfile:
+		permfile = permdb.query(Permission_Assoc).get((user.id, curfile.id))
 
 		if permfile.perm_type:
-			file.content = content
+			curfile.content = content
 			filedb.commit()
 			resp["message"] = "success"
 			print "file written"
@@ -187,17 +189,17 @@ def rename(fileid, newfilename, username, token):
 	userdb = user_setup()
 	user = userdb.query(User).filter(User.name == username).first()
 	filedb = file_setup()
-	file = filedb.query(File).filter(File.identifier == fileid).first()
+	curfile = filedb.query(File).filter(File.identifier == fileid).first()
 
 
 	permdb = permission_setup()
-	if file:
-		permfile = permdb.query(Permission_Assoc).get((user.id, file.id))
+	if curfile:
+		permfile = permdb.query(Permission_Assoc).get((user.id, curfile.id))
 		if permfile.perm_type:
 			if filedb.query(File).filter(File.filename == newfilename).first():
 				return False
 			else:
-				file.filename = newfilename
+				curfile.filename = newfilename
 				filedb.commit()
 				print "file renamed"
 				return True
@@ -224,16 +226,16 @@ def perm(fileid, filename, perms, username, token):
 	owner = userdb.query(User).filter(User.name == username).first()
 	other_user = userdb.query(User).filter(User.name == perms[1]).first()
 	filedb = file_setup()
-	file = filedb.query(File).filter(File.identifier == fileid).first()
+	curfile = filedb.query(File).filter(File.identifier == fileid).first()
 	
-	if file.filename != filename:
-		resp["new_filename"] = file.filename
+	if curfile.filename != filename:
+		resp["new_filename"] = curfile.filename
 
 
 	permdb = permission_setup()
-	if file:
-		if file.owner_id == owner.id:
-			permission = Permission_Assoc(user_id=other_user.id, file_id=file.id, perm_type=perms[0], key=perms[2])
+	if curfile:
+		if curfile.owner_id == owner.id:
+			permission = Permission_Assoc(user_id=other_user.id, file_id=curfile.id, perm_type=perms[0], key=perms[2])
 			permdb.add(permission)
 			permdb.commit()
 			resp["message"] = "success"
