@@ -14,3 +14,7 @@ them using pip, run:
 
     pip install -r requirements.txt
 
+####Quick run
+From the root directory, just run
+
+    ./quick-fyrebox
