@@ -83,6 +83,8 @@ def delete(fileid, filename, username, token):
 		if permfile:
 			if permfile.perm_type: #if they have write permissions
 				filedb.delete(file)
+				permdb.delete(permfile)
+				permdb.commit()
 				filedb.commit()
 				print "file deleted"
 				return True

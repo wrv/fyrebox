@@ -10,8 +10,6 @@ class LogRpcServer(rpclib.RpcServer):
     		logger.log(msg)
 
 
-
-
 (_, dummy_fyreboxld_fd, sockpath) = sys.argv
 
 s = LogRpcServer()
