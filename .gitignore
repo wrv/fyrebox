@@ -50,3 +50,4 @@ nosetests.xml
 
 # random files
 Server/events.log
+*log
