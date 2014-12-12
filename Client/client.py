@@ -140,7 +140,15 @@ def read_dir(dir_name):
     if 'message' in response:
         if response['message'] == 'failure':
             raise ValueError
-    return response
+    content = response['content']
+    content = content.split()
+    file_list = []
+    for element in content:
+        first = session.query(FileInfo).filter_by(unique_id = element).first()
+        file_list.append(first.file_name)
+    file_list.sort()
+        
+    return file_list
 def rename(old_file_name, new_file_name):
     first = session.query(FileInfo).filter_by(file_name = old_file_name).first()
 
