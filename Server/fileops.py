@@ -21,6 +21,7 @@ def create(filename, dirname, username, token):
 	if not check_token(username, token):
 		return False
 	
+	resp = {}
 	#setup of the databases
 	userdb = user_setup()
 	user = userdb.query(User).filter(User.name == username).first()
@@ -28,15 +29,19 @@ def create(filename, dirname, username, token):
 	permdb = permission_setup()
 
 	#get a reference to the parent directory we're working in
-	parent_dir = 0
+	parent_dir = filedb.query(File).filter(File.filename == dirname).first()
+	if parent_dir:
+		parent_id = parent_dir.id
+	else:
+		parent_id = 0
 
 	#generate the fileID from various variables
 	fileID = hashlib.sha256(username + token + filename + dirname + str(time.time())+ str(random.random())).hexdigest()
 	#create the file
-	newfile = File(identifier=fileID, filename=filename, parent_id=parent_dir, owner_id=user.id, content="", directory=False)
+	newfile = File(identifier=fileID, filename=filename, parent_id=parent_id, owner_id=user.id, content="", directory=False)
 	filedb.add(newfile)
 	filedb.commit()
-	print '\n\nTESTING CREATE', newfile.id, '\n\n'
+	
 	#create the permissions for the file
 	newperm = Permission_Assoc(user_id=user.id, file_id=newfile.id, perm_type=True)
 
@@ -44,7 +49,9 @@ def create(filename, dirname, username, token):
 	permdb.add(newperm)
 	permdb.commit()
 
-	return fileID
+	resp["message"] = "success"
+ 	resp["file_id"] = fileID
+	return resp
 
 ##
 # delete(filename, username, token)
@@ -56,25 +63,31 @@ def create(filename, dirname, username, token):
 # Checks the token, checks write permission on file and all files inside
 # of folder. Remove corresponding file. Respond with success/failure.
 #
-def delete(filename, username, token):
+def delete(fileid, filename, username, token):
 	if not check_token(username, token):
 		return False
 	#check permissions
+
+	resp = {}
 	userdb = user_setup()
 	user = userdb.query(User).filter(User.name == username).first()
 
 	filedb = file_setup()
-	file = filedb.query(File).filter(File.filename == filename).first()
+	file = filedb.query(File).filter(File.identifier == fileid).first()
 	
+	if file.filename != filename:
+		resp["new_filename"] = file.filename
+
 	permdb = permission_setup()
 	if file:
-		permission = permdb.query(Permission_Assoc).get((user.id, file.id))
+		permfile = permdb.query(Permission_Assoc).get((user.id, file.id))
 
-		if permission:
+		if permfile:
 			if permfile.perm_type: #if they have write permissions
-				file.delete()
+				filedb.delete(file)
 				filedb.commit()
-				return True
+				resp["message"] = "success"
+				return resp
 	return False
 
 ##
@@ -91,21 +104,26 @@ def read(fileid, filename, username, token):
 	if not check_token(username, token):
 		return False
 
-	
+	resp = {}
 	userdb = user_setup()
 	user = userdb.query(User).filter(User.name == username).first()
 	filedb = file_setup()
 
-	datfile = filedb.query(File).filter(File.identifier == fileid).first()
+	file = filedb.query(File).filter(File.identifier == fileid).first()
+
+	if file.filename != filename:
+		resp["new_filename"] = file.filename
+
 	permdb = permission_setup()
-	if datfile: 
-		print 'FILE ACCESSED' 
-		permfile = permdb.query(Permission_Assoc).get((user.id, datfile.id))
+	if file: 
+		
+		permfile = permdb.query(Permission_Assoc).get((user.id, file.id))
 
 		# if in the permissions database they have the permission to read
 		if permfile:
-			print 'LOL'
-			return datfile.content
+			resp["content"] = file.content
+			resp["message"] = "success"
+			return resp
 
 	return False
 
@@ -125,19 +143,25 @@ def write(fileid, filename, content, username, token):
 	if not check_token(username, token):
 		return False
 
+	resp = {}
 	#check permission
 	userdb = user_setup()
 	user = userdb.query(User).filter(User.name == username).first()
 	filedb = file_setup()
-	datfile = filedb.query(File).filter(File.identifier == fileid).first()
+	file = filedb.query(File).filter(File.identifier == fileid).first()
+
+	if file.filename != filename:
+		resp["new_filename"] = file.filename
+
 	permdb = permission_setup()
-	if datfile:
-		permfile = permdb.query(Permission_Assoc).get((user.id, datfile.id))
+	if file:
+		permfile = permdb.query(Permission_Assoc).get((user.id, file.id))
 
 		if permfile.perm_type:
-			datfile.content = content
+			file.content = content
 			filedb.commit()
-			return True
+			resp["message"] = "success"
+			return resp
 
 	return False
 
@@ -156,11 +180,32 @@ def rename(fileid, newfilename, username, token):
 	if not check_token(username, token):
 		return False
 
+	resp = {}
+	userdb = user_setup()
+	user = userdb.query(User).filter(User.name == username).first()
+	filedb = file_setup()
+	file = filedb.query(File).filter(File.identifier == fileid).first()
+
+
+	permdb = permission_setup()
+	if file:
+		permfile = permdb.query(Permission_Assoc).get((user.id, file.id))
+		if permfile.perm_type:
+			if filedb.query(File).filter(File.filename == newfilename).first():
+				return False
+			else:
+				file.filename = newfilename
+				filedb.commit()
+				resp["message"] = "success"
+				return resp
+
+	return False
+
 ##
 # perm(filename, perms, username, token)
 #
 # filename - the encrypted name of the file we want to change permissions to
-# perms - a tuple of user, permission, and secret key
+# perms - (bolean value, other username, key)
 # username - username of the person
 # token - the token of the person
 #
@@ -170,3 +215,27 @@ def rename(fileid, newfilename, username, token):
 def perm(fileid, filename, perms, username, token):
 	if not check_token(username, token):
 		return False
+
+	resp = {}
+	userdb = user_setup()
+	owner = userdb.query(User).filter(User.name == username).first()
+	other_user = userdb.query(User).filter(User.name == perms[1]).first()
+	filedb = file_setup()
+	file = filedb.query(File).filter(File.identifier == fileid).first()
+	
+	if file.filename != filename:
+		resp["new_filename"] = file.filename
+
+
+	permdb = permission_setup()
+	if file:
+		if file.owner_id == owner.id:
+			permission = Permission_Assoc(user_id=other_user.id, file_id=file.id, perm_type=perms[0], key=perms[2])
+			permdb.add(permission)
+			permdb.commit()
+			resp["message"] = "success"
+			return resp
+
+	return False
+
+

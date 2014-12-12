@@ -41,7 +41,8 @@ class Permission_Assoc(Base):
 	user_id = Column(Integer, ForeignKey('user.id'), primary_key=True)
 	file_id = Column(Integer, ForeignKey('file.id'), primary_key=True)
 	perm_type = Column(Boolean) # true = read&write, false = read
-
+	key = Column(String)
+	
 	user = relationship('User')
 
 

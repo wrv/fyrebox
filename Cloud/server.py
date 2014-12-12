@@ -100,7 +100,9 @@ class FileServer(LineReceiver):
             if key is None:
                 self.sendLine("User not found")
             else:
-                self.sendLine(key)
+                response = {}
+                response['key'] = key.key
+                self.sendLine(json.dumps(response))
             return False
 
         elif operation == 'list':

@@ -8,7 +8,7 @@ from sqlalchemy import create_engine, Column, Integer, String, Sequence
 from sqlalchemy.ext.declarative import declarative_base
 
 # create in-memory db -- testing
-engine = create_engine('sqlite:///cloud.db', echo=True) # TODO: config file ?
+engine = create_engine('sqlite:///pk.db', echo=True) # TODO: config file ?
 
 Base = declarative_base()
 class PublicKey(Base):

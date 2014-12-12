@@ -23,6 +23,7 @@ class FileInfo(Base):
     file_name = Column(String)
     unique_id = Column(String, primary_key=True)
     file_key = Column(String)
+    content_hash = Column(String)
 
     def __repr__(self):
         return "<User( unique_id='%s', file_name='%s',  key='%s')>" % (
