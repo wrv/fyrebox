@@ -2,7 +2,7 @@
 import cmd
 import sys
 import getpass
-
+import traceback
 from client import login, register, serverConnection, create, write, read, delete, rename
 
 class FyreBoxShell(cmd.Cmd):
@@ -49,6 +49,7 @@ class FyreBoxShell(cmd.Cmd):
             create(arg)
             self.print_success("Create successful.")
         except:
+            traceback.print_exc()
             self.print_error("Create failed. Please retry.")
 
     def do_quit(self, arg):
@@ -93,6 +94,7 @@ class FyreBoxShell(cmd.Cmd):
             write(filename, content)
             self.print_success("Content successfully written.")
         except:
+            traceback.print_exc()
             self.print_error("Sorry. Writing content failed. "
                     "Please retry")
 
@@ -111,6 +113,7 @@ class FyreBoxShell(cmd.Cmd):
                     )
             print results['content']
         except:
+            traceback.print_exc()
             self.print_error("Sorry. Reading content failed. "
                     "Please retry")
 
