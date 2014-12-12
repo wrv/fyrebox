@@ -208,6 +208,8 @@ class FyreBoxShell(cmd.Cmd):
     def do_cd(self, arg):
         if arg == "root":
             self.client.change_dir(self.client.root_directory)
+        elif "." in arg:
+            sys.stdout.write("Sorry guys, . and .. aren't implemented, try again next week" + '\n')
         else:
             self.client.change_dir(arg)
             self.prompt_file += "/" + arg
