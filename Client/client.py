@@ -168,22 +168,31 @@ class Client(object):
         response = self.send_and_get(self.fs_sslSocket, message)
         content = response['content']
         file_list = []
-        print content
         for element in content:
             first = session.query(FileInfo).filter_by(unique_id = element).first()
             file_list.append(first.file_name)
         file_list.sort()
             
         return file_list
-
+    def change_dir(self, dir_name):
+        if dir_name == self.root_directory:
+            self.current_directory = self.root_directory
+        first = session.query(FileInfo).filter_by(file_name = dir_name).first()
+        if first:
+            self.current_directory = dir_name
     def create(self, file_name):
         file_key = os.urandom(32)
         enc_file_name = encrypt(file_name, file_key)
-
-        message = self.setupMessage("create")
-        message.update({'filename': enc_file_name,
-                        'dirname': self.current_directory})
-
+        if self.current_directory != self.root_directory:
+            dir_key = self.get_file_key(self.current_directory)
+            enc_parent_dir = encrypt(self.current_directory, dir_key)
+            message = self.setupMessage("create")
+            message.update({'filename': enc_file_name,
+                            'dirname': enc_parent_dir})
+        else:
+            message = self.setupMessage("create")
+            message.update({'filename': enc_file_name,
+                            'dirname': self.current_directory})
         response = self.send_and_get(self.fs_sslSocket, message)
 
         unique_id = response['fileid']
@@ -287,7 +296,6 @@ class Client(object):
         message['fileid'] = unique_id
         message['permissions'] = (permission, new_user, encrypted_key)
 
-        print message ## TODO remove
 
         response = self.send_and_get(self.fs_sslSocket, message)
         return response
@@ -355,17 +363,7 @@ class Client(object):
         return response
 
 
-def main():
-    c = Client()
-    c.register("test", "test")
-    c.create("testfile")
-    c.create("testfile2")
-    c.create("testfile3")
-    print c.read_dir(c.current_directory) 
-
 def print_error(msg):
     "Prints red message with a newline at the end"
     sys.stderr.write('\033[91m' + msg + '\033[0m \n')
 
-if __name__ == "__main__":
-    main()

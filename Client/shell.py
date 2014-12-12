@@ -24,6 +24,8 @@ class FyreBoxShell(cmd.Cmd):
 
     """
     prompt = 'fyrebox> '
+    prompt_username = None
+    prompt_file = None
     undoc_header = 'Alias commands'
     doc_header = 'Commands (type help <command> for more information)'
     MIN_FILENAME_LEN = 2
@@ -147,7 +149,9 @@ class FyreBoxShell(cmd.Cmd):
                 " successfully registered. ")
             # registration automatically logs in
             self.logged_in = True
-            self.prompt = str(self.client.username) + '@fyrebox> '
+            self.prompt_username = str(self.client.username) + '@fyrebox'
+            self.prompt_file = ":root"
+            self.prompt = self.prompt_username + self.prompt_file + "> "
         except Exception as e:
             if DEBUG:
                 print e
@@ -173,7 +177,10 @@ class FyreBoxShell(cmd.Cmd):
             self.print_success('User with username: ' + username + ""
                 " successfully logged in. ")
             self.logged_in = True
-            self.prompt = str(self.client.username) + '@fyrebox> '
+            
+            self.prompt_username = str(self.client.username) + '@fyrebox'
+            self.prompt_file = ":root"
+            self.prompt = self.prompt_username + self.prompt_file + "> "
         except Exception as e:
             self.print_error('An error occurred. Please retry')
 
@@ -198,6 +205,14 @@ class FyreBoxShell(cmd.Cmd):
         except:
             traceback.print_exc()
             self.print_error("ls failed. Please retry.")
+    def do_cd(self, arg):
+        if arg == "root":
+            self.client.change_dir(self.client.root_directory)
+        else:
+            self.client.change_dir(arg)
+            self.prompt_file += "/" + arg
+            self.prompt = self.prompt_username + self.prompt_file + "> "
+
     #----- util functions -----
     def prompt_get(self, param):
         data = None
