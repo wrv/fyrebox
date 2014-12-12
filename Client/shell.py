@@ -3,7 +3,7 @@ import cmd
 import sys
 import getpass
 
-from client import login, register, serverConnection, create, write, read, delete
+from client import login, register, serverConnection, create, write, read, delete, rename
 
 class FyreBoxShell(cmd.Cmd):
     intro = """
@@ -73,12 +73,12 @@ class FyreBoxShell(cmd.Cmd):
 
     def do_rename(self, old_file_name):
         'Rename a file: RENAME'
-        new_file_name = self.prompt_get('new file name')
+        new_file_name = self.prompt_get('file_name')
         try:
-            rename(old_file_name, new_file_name)
-            self.print_success("Create successful.")
+            rename(old_file_name.strip(), new_file_name.strip())
+            self.print_success("Rename successful.")
         except:
-            self.print_error("Create failed. Please retry.") 
+            self.print_error("Rename failed. Please retry.") 
     def do_write(self, filename):
         'Write file: WRITE <filename>'
         if not filename:
@@ -212,8 +212,8 @@ class FyreBoxShell(cmd.Cmd):
     def do_bye(self, arg):
         self.do_quit(arg)
 
-    def do_ren(self, old_file_name):
-        self.do_rename(old_file_name)
+    def do_ren(self, arg):
+        self.do_rename(arg)
 
     def do_remove(self, arg):
         self.do_rm(arg)

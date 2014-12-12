@@ -51,7 +51,6 @@ def create(filename, dirname, username, token):
 
 	resp["message"] = "success"
  	resp["file_id"] = fileID
- 	print fileID
 	return resp
 
 ##

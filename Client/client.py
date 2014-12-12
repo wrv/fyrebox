@@ -8,6 +8,7 @@ import socket
 import json
 import ssl
 import sys
+import hashlib
 from file import *
 from crypto import *
 from database import FileInfo, engine
@@ -20,68 +21,58 @@ sslSocket = None
 token = None
 current_directory = None
 username = None
-def helpme(comSplit):
-    print "stuff"
-
+password_hash = None
 def print_error( msg):
     "Prints red message with a newline at the end"
     sys.stderr.write('\033[91m'+msg+'\033[0m \n')
 
 def create(file_name):
     file_key = os.urandom(32)
-    #print file_key
-    #print len(file_key)
-    #open(file_name, 'a').close()
     enc_file_name = encrypt(file_name, file_key)
     
-    message = {}
-    message['operation'] = "create"
-    message['username'] = username
-    message['token'] = token
+    message = setupMessage("create")
     message['filename'] = enc_file_name
     message['dirname'] = current_directory
+    
     sslSocket.write(json.dumps(message))
     response = json.loads(sslSocket.read())
 
     if 'message' in response:
         if response['message'] == 'failure':
             raise ValueError
-    #print response
 
     unique_id = response['fileid'] 
     encoded_file_key = file_key.encode('hex')
     new_file = FileInfo(file_name = unicode(file_name), unique_id = unique_id, file_key = encoded_file_key)
-    print response 
     session.add(new_file)
     session.commit()    
     
     return response
 
 def write(file_name, content):
-    file_key = session.query(FileInfo).filter_by(file_name = file_name)
-    message = {}
-    message['operation'] = "write"
-    message['username'] = username
-    message['token'] = token
-    message['filename'] = encrypt(file_name, file_key.first().file_key.decode('hex'))
-    message['fileid'] =  file_key.first().unique_id
-    message['content'] = encrypt(content, file_key.first().file_key.decode('hex'))
+    first = session.query(FileInfo).filter_by(file_name = file_name).first()
+    file_key = first.file_key.decode('hex')
+   
+     message = setupMessage("write")
+    message['filename'] = encrypt(file_name, file_key)
+    message['fileid'] =  first.unique_id
+    message['content'] = encrypt(content, file_key)
+
     sslSocket.write(json.dumps(message))
     response = json.loads(sslSocket.read())
+
     if 'message' in response:
         if response['message'] == 'failure':
             raise ValueError
-    #print response
+    
     return response
 
 def read(file_name):
     file_key = session.query(FileInfo).filter_by(file_name = file_name)
-    message = {}
-    message['operation'] = "read"
-    message['username'] = username
-    message['token'] = token
+    message = setupMessage("read")
     message['filename'] = encrypt(file_name, file_key.first().file_key.decode('hex'))
     message['fileid'] =  file_key.first().unique_id
+    print message
     sslSocket.write(json.dumps(message))
     response = json.loads(sslSocket.read())
 
@@ -98,10 +89,7 @@ def rename(old_file_name, new_file_name):
     file_key = first.file_key.decode('hex')
     unique_id = first.unique_id
     first.file_name = new_file_name
-    message = {}
-    message['operation'] = "rename"
-    message['username'] = username
-    message['token'] = token
+    message = setupMessage("rename")
     message['filename'] = encrypt(new_file_name, file_key)
     message['fileid'] = unique_id
     sslSocket.write(json.dumps(message))
@@ -117,10 +105,7 @@ def delete(file_name):
     first = session.query(FileInfo).filter_by(file_name = file_name).first()
     file_key = first.file_key.decode('hex')
     unique_id = first.unique_id
-    message = {}
-    message['operation'] = "delete"
-    message['username'] = username
-    message['token'] = token
+    message = setupMessage("delete")
     message['filename'] = encrypt(file_name, file_key)
     message['fileid'] = unique_id
     sslSocket.write(json.dumps(message))
@@ -134,9 +119,13 @@ def delete(file_name):
     return response
 def setupMessage(operation):
     message = {}
+    message['operation'] = operation
+    message['username'] = username
+    message['token'] = token
+    return message
 def main():
     serverConnection()
-    register("asdfasdf", "test")
+    register("test4", "test")
     create("testfile")
     write("testfile", "test")
     read("testfile")
@@ -154,12 +143,14 @@ def login(user, password):
     global token
     global current_directory
     global username
+    global password_hash
     username = user
     response = authHelper(username, password, "login")
     if 'message' in response:
         if response['message'] == 'failure':
             raise ValueError
-
+    password_hash = hashlib.sha256(password).hexdigest().decode('hex')
+    print decrypt(encrypt("Blarg", password_hash), password_hash)
     token = response['token']
     current_directory = response['rootdir']
     os.chdir(current_directory)
@@ -174,6 +165,10 @@ def register(user, password):
     if 'message' in response:
         if response['message'] == 'failure':
             raise ValueError
+    password_hash = hashlib.sha256(password).digest()
+    print password_hash
+    print len(password_hash)
+    print decrypt(encrypt("Blarg", password_hash), password_hash)
 
     token = response['token']
     current_directory = response['rootdir']
