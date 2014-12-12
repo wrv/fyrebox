@@ -2,8 +2,8 @@
 import cmd
 import sys
 import getpass
-
-from client import login, register, serverConnection, create, write, read
+import traceback
+from client import login, register, serverConnection, create, write, read, delete, rename
 
 class FyreBoxShell(cmd.Cmd):
     intro = """
@@ -49,6 +49,7 @@ class FyreBoxShell(cmd.Cmd):
             create(arg)
             self.print_success("Create successful.")
         except:
+            traceback.print_exc()
             self.print_error("Create failed. Please retry.")
 
     def do_quit(self, arg):
@@ -58,16 +59,27 @@ class FyreBoxShell(cmd.Cmd):
 
     def do_rm(self, arg):
         'Remove a file: RM'
-        pass
-
+        if len(arg) < self.MIN_FILENAME_LEN:
+            self.print_error("ERROR. Usage RM <filename>. Make sure filename is at least %d charachters long" % (self.MIN_FILENAME_LEN))
+            return
+        try:
+            delete(arg)
+            self.print_success("Rm successful.")
+        except:
+            self.print_error("Rm failed. Please retry.")
+        
     def do_perm(self, arg):
         'Get file permissions: PERM'
         pass
 
-    def do_rename(self, arg):
+    def do_rename(self, old_file_name):
         'Rename a file: RENAME'
-        pass
-
+        new_file_name = self.prompt_get('file_name')
+        try:
+            rename(old_file_name.strip(), new_file_name.strip())
+            self.print_success("Rename successful.")
+        except:
+            self.print_error("Rename failed. Please retry.") 
     def do_write(self, filename):
         'Write file: WRITE <filename>'
         if not filename:
@@ -82,6 +94,7 @@ class FyreBoxShell(cmd.Cmd):
             write(filename, content)
             self.print_success("Content successfully written.")
         except:
+            traceback.print_exc()
             self.print_error("Sorry. Writing content failed. "
                     "Please retry")
 
@@ -100,6 +113,7 @@ class FyreBoxShell(cmd.Cmd):
                     )
             print results['content']
         except:
+            traceback.print_exc()
             self.print_error("Sorry. Reading content failed. "
                     "Please retry")
 

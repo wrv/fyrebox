@@ -167,7 +167,7 @@ class FileServer(LineReceiver):
                 if output:
                     response = {}
                     response['message'] = 'success'
-                    response['fileid'] = output
+                    response['fileid'] = output['file_id']
                     self.sendLine(json.dumps(response))
                     return
                 self.fail()
@@ -185,7 +185,7 @@ class FileServer(LineReceiver):
                 if False != output:
                     response = {}
                     response['message'] = 'success'
-                    response['content'] = output
+                    response['content'] = output['content']
                     self.sendLine(json.dumps(response))
                     return
 
@@ -213,7 +213,7 @@ class FileServer(LineReceiver):
                 if output:
                     response = {}
                     response['message'] = 'success'
-                    response['dirid'] = output
+                    response['dirid'] = output['dir_id']
                     self.sendLine(json.dumps(response))
                     return
                 self.fail()
@@ -230,7 +230,7 @@ class FileServer(LineReceiver):
                 if content:
                     response = {}
                     response['message'] = 'success'
-                    response['content'] = output
+                    response['content'] = output['content']
                     self.sendLine(json.dumps(response))
                     return
             elif "renamedir" == op:
