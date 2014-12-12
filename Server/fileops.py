@@ -50,7 +50,7 @@ def create(filename, dirname, username, token):
 	permdb.commit()
 
 	resp["message"] = "success"
- 	resp["file_id"] = fileID
+ 	resp["fileid"] = fileID
 	return resp
 
 ##
@@ -68,15 +68,12 @@ def delete(fileid, filename, username, token):
 		return False
 	#check permissions
 
-	resp = {}
 	userdb = user_setup()
 	user = userdb.query(User).filter(User.name == username).first()
 
 	filedb = file_setup()
 	file = filedb.query(File).filter(File.identifier == fileid).first()
 	
-	if file.filename != filename:
-		resp["new_filename"] = file.filename
 
 	permdb = permission_setup()
 	if file:
@@ -86,8 +83,7 @@ def delete(fileid, filename, username, token):
 			if permfile.perm_type: #if they have write permissions
 				filedb.delete(file)
 				filedb.commit()
-				resp["message"] = "success"
-				return resp
+				return True
 	return False
 
 ##
@@ -180,7 +176,6 @@ def rename(fileid, newfilename, username, token):
 	if not check_token(username, token):
 		return False
 
-	resp = {}
 	userdb = user_setup()
 	user = userdb.query(User).filter(User.name == username).first()
 	filedb = file_setup()
@@ -196,8 +191,7 @@ def rename(fileid, newfilename, username, token):
 			else:
 				file.filename = newfilename
 				filedb.commit()
-				resp["message"] = "success"
-				return resp
+				return True
 
 	return False
 
@@ -205,7 +199,7 @@ def rename(fileid, newfilename, username, token):
 # perm(filename, perms, username, token)
 #
 # filename - the encrypted name of the file we want to change permissions to
-# perms - (bolean value, other username, key)
+# perms - (boolean value, other username, key)
 # username - username of the person
 # token - the token of the person
 #
