@@ -137,6 +137,44 @@ class Client(object):
     ########################################
     # Actions Functions
     ########################################
+    def create_dir(self, dir_name):
+        dir_key = os.urandom(32)
+        enc_dir_name = encrypt(dir_name, dir_key)
+                    
+        message = self.setupMessage("createdir")
+        message['dirname'] = enc_dir_name
+        message['parentdir'] = current_directory
+
+        response = self.send_and_get(self.fs_sslSocket, message)
+
+        unique_id = response['dirid']
+        encoded_dir_key = encrypt(dir_key.encode('hex'), password_hash)
+        content_hash = hashlib.sha256("").digest().encode('hex')
+        new_dir = FileInfo(file_name = dir_name, unique_id = unique_id, file_key =
+    encoded_dir_key, content_hash = content_hash)
+        session.add(new_dir)
+        session.commit()
+        return enc_dir_name
+
+    def read_dir(self,dir_name):
+        first = session.query(FileInfo).filter_by(file_name = dir_name).first()
+        dir_key = self.get_file_key(dir_name)
+        unique_id = self.get_unique_id(dir_name)
+
+        message = self.setupMessage("readdir")
+        message['dirname'] = encrypt(dir_name, dir_key)
+        message['dirid'] = unique_id
+                    
+        response = self.send_and_get(self.fs_sslSocket, message)
+        content = response['content']
+        content = content.split()
+        file_list = []
+        for element in content:
+            first = session.query(FileInfo).filter_by(unique_id = element).first()
+            file_list.append(first.file_name)
+        file_list.sort()
+            
+        return file_list
 
     def create(self, file_name):
         file_key = os.urandom(32)

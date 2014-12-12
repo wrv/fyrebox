@@ -207,9 +207,9 @@ class FileServer(LineReceiver):
         #### Directory Operations
         if op in DIROPS:
             dirname = parsedjson['dirname']
-
             if "createdir" == op:
-                output = dirops.createdir(dirname, username, token)
+                parent_dir = parsedjson['parentdir']
+                output = dirops.createdir(dirname, parent_dir, username, token)
                 if output:
                     response = {}
                     response['message'] = 'success'
@@ -226,8 +226,8 @@ class FileServer(LineReceiver):
                     self.sendLine(MSGSUCCESS)
                     return
             elif "readdir" == op:
-                content = dirops.readdir(dirid, dirname, username, token)
-                if content:
+                output = dirops.readdir(dirid, dirname, username, token)
+                if output:
                     response = {}
                     response['message'] = 'success'
                     response['content'] = output['content']
