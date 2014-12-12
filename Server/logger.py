@@ -7,12 +7,12 @@ def main():
 	#log('testing the logger')
 
 
-def log(msg):
+def log(source, msg):
 	time =  datetime.now().isoformat(' ')
-	logging.info(msg + ' -- %s' % (time))
+	logging.info(source + ' >> ' + msg + ' -- %s' % (time))
 
 
 
 #start logging
-if __name__ == '__main__':
-    main()
+#if __name__ == '__main__':
+#    main()
