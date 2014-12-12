@@ -3,7 +3,7 @@ import cmd
 import sys
 import getpass
 
-from client import login, register, serverConnection, create, write, read
+from client import login, register, serverConnection, create, write, read, delete
 
 class FyreBoxShell(cmd.Cmd):
     intro = """
@@ -58,16 +58,27 @@ class FyreBoxShell(cmd.Cmd):
 
     def do_rm(self, arg):
         'Remove a file: RM'
-        pass
-
+        if len(arg) < self.MIN_FILENAME_LEN:
+            self.print_error("ERROR. Usage RM <filename>. Make sure filename is at least %d charachters long" % (self.MIN_FILENAME_LEN))
+            return
+        try:
+            delete(arg)
+            self.print_success("Rm successful.")
+        except:
+            self.print_error("Rm failed. Please retry.")
+        
     def do_perm(self, arg):
         'Get file permissions: PERM'
         pass
 
-    def do_rename(self, arg):
+    def do_rename(self, old_file_name):
         'Rename a file: RENAME'
-        pass
-
+        new_file_name = self.prompt_get('new file name')
+        try:
+            rename(old_file_name, new_file_name)
+            self.print_success("Create successful.")
+        except:
+            self.print_error("Create failed. Please retry.") 
     def do_write(self, filename):
         'Write file: WRITE <filename>'
         if not filename:
@@ -201,8 +212,8 @@ class FyreBoxShell(cmd.Cmd):
     def do_bye(self, arg):
         self.do_quit(arg)
 
-    def do_ren(self, arg):
-        self.do_rename(arg)
+    def do_ren(self, old_file_name):
+        self.do_rename(old_file_name)
 
     def do_remove(self, arg):
         self.do_rm(arg)

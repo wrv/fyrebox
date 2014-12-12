@@ -31,7 +31,7 @@ def create(file_name):
     file_key = os.urandom(32)
     #print file_key
     #print len(file_key)
-    open(file_name, 'a').close()
+    #open(file_name, 'a').close()
     enc_file_name = encrypt(file_name, file_key)
     
     message = {}
@@ -51,6 +51,7 @@ def create(file_name):
     unique_id = response['fileid'] 
     encoded_file_key = file_key.encode('hex')
     new_file = FileInfo(file_name = unicode(file_name), unique_id = unique_id, file_key = encoded_file_key)
+    print response 
     session.add(new_file)
     session.commit()    
     
@@ -93,7 +94,6 @@ file_key.first().file_key.decode('hex'))
     return response
 
 def rename(old_file_name, new_file_name):
-    os.rename(old_file_name, new_file_name)
     first = session.query(FileInfo).filter_by(file_name = old_file_name).first()
     file_key = first.file_key.decode('hex')
     unique_id = first.unique_id
@@ -109,7 +109,7 @@ def rename(old_file_name, new_file_name):
     if 'message' in response:
         if response['message'] == 'failure':
             raise ValueError
-    os.rename(old_file_name, new_file_name)
+    #os.rename(old_file_name, new_file_name)
     session.commit()
     return response
 
@@ -129,7 +129,7 @@ def delete(file_name):
         if response['message'] == 'failure':
             raise ValueError
     session.delete(first)
-    os.unlink(file_name)
+    #os.unlink(file_name)
     session.commit()
     return response
 def setupMessage(operation):
@@ -191,7 +191,7 @@ def register(user, password):
 
     cloud_connect_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     cloud_ssl_sock = ssl.wrap_socket(cloud_connect_socket,
-            ca_certs="certs/server.crt",
+            ca_certs="../certs/server.crt",
             cert_reqs=ssl.CERT_REQUIRED)
     cloud_ssl_sock.connect(('localhost', 10029))
     cloud_ssl_sock.write(json.dumps(

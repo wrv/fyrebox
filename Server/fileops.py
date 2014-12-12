@@ -50,8 +50,8 @@ def create(filename, dirname, username, token):
 	permdb.commit()
 
 	resp["message"] = "success"
-	resp["file_id"] = fileID
-
+ 	resp["file_id"] = fileID
+ 	print fileID
 	return resp
 
 ##
@@ -81,11 +81,11 @@ def delete(fileid, filename, username, token):
 
 	permdb = permission_setup()
 	if file:
-		permission = permdb.query(Permission_Assoc).get((user.id, file.id))
+		permfile = permdb.query(Permission_Assoc).get((user.id, file.id))
 
-		if permission:
+		if permfile:
 			if permfile.perm_type: #if they have write permissions
-				file.delete()
+				filedb.delete(file)
 				filedb.commit()
 				resp["message"] = "success"
 				return resp
