@@ -62,6 +62,11 @@ class FyreBoxShell(cmd.Cmd):
         sys.stdout.write("\n") # new line 
         sys.exit(0)
 
+    def do_ls(self, arg):
+        'List files'
+        contents = self.client.read_dir(self.client.current_directory)
+        print contents
+
     def do_rm(self, arg):
         'Remove a file: RM'
         if len(arg) < self.MIN_FILENAME_LEN:

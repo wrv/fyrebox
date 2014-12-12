@@ -17,6 +17,7 @@ from settings import (CLOUD_SERVER_NAME, CLOUD_SERVER_PORT,
                         FILE_SERVER_NAME, FILE_SERVER_PORT )
 from settings import CLIENT_DEBUG as DEBUG
 
+FILE_DIR = os.path.dirname(os.path.realpath(__file__))
 Session = sessionmaker(bind=engine)
 session = Session()
 
@@ -110,7 +111,8 @@ class Client(object):
         ## must have certificate present
         fs_connect_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.fs_sslSocket = ssl.wrap_socket(fs_connect_socket,
-                                         ca_certs="certs/file_server.crt",
+                                         ca_certs=os.path.join(FILE_DIR,
+                                             "certs/file_server.crt"),
                                          cert_reqs=ssl.CERT_REQUIRED)
         self.fs_sslSocket.connect((FILE_SERVER_NAME, FILE_SERVER_PORT))
         self.fs_sslSocket.read() # connect success
@@ -120,7 +122,7 @@ class Client(object):
         ## must have certificate present
         cloud_connect_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.cs_sslSocket = ssl.wrap_socket(cloud_connect_socket,
-                                         ca_certs="certs/cloud_server.crt",
+                                         ca_certs=os.path.join(FILE_DIR,"certs/cloud_server.crt"),
                                          cert_reqs=ssl.CERT_REQUIRED)
         self.cs_sslSocket.connect((CLOUD_SERVER_NAME, CLOUD_SERVER_PORT))
         self.cs_sslSocket.read() # connect success
