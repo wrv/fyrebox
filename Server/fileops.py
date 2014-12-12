@@ -51,6 +51,7 @@ def create(filename, dirname, username, token):
 
 	resp["message"] = "success"
  	resp["fileid"] = fileID
+ 	print "file created"
 	return resp
 
 ##
@@ -83,6 +84,7 @@ def delete(fileid, filename, username, token):
 			if permfile.perm_type: #if they have write permissions
 				filedb.delete(file)
 				filedb.commit()
+				print "file deleted"
 				return True
 	return False
 
@@ -119,6 +121,7 @@ def read(fileid, filename, username, token):
 		if permfile:
 			resp["content"] = file.content
 			resp["message"] = "success"
+			print "file read"
 			return resp
 
 	return False
@@ -157,6 +160,7 @@ def write(fileid, filename, content, username, token):
 			file.content = content
 			filedb.commit()
 			resp["message"] = "success"
+			print "file written"
 			return resp
 
 	return False
@@ -191,6 +195,7 @@ def rename(fileid, newfilename, username, token):
 			else:
 				file.filename = newfilename
 				filedb.commit()
+				print "file renamed"
 				return True
 
 	return False
@@ -228,6 +233,7 @@ def perm(fileid, filename, perms, username, token):
 			permdb.add(permission)
 			permdb.commit()
 			resp["message"] = "success"
+			print "file permissioned"
 			return resp
 
 	return False
