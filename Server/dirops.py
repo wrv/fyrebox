@@ -84,11 +84,32 @@ def deletedir(dirid, dirname, username, token):
 
 		if permission:
 			if permfile.perm_type: #if they have write permissions
-				directory.delete()
+				#delete the files in the directory and it's contents
+				delete_contents(directory, filedb, permdb)
+
+				filedb.delete(directory)
 				filedb.commit()
+
+				permdb.query(Permission_Assoc).filter(Permmission_Assoc.file_id == directory.id).delete()
+				permdb.commit()
 				resp["message"] = "success"
 				return resp
 	return False
+
+def delete_contents(directory, filedb, permdb):
+	subcontent = filedb.query(File).filter(File.parent_id == directory.id)
+	for filedir in subcontent:
+		if filedir.directory:
+			content = filedb.query(File).filter(File.parent_id == filedir.id)
+			for file in content:
+				delete_contents(file, db)
+		else:
+			filedb.delete(subcontent)
+			filedb.commit()
+			permdb.query(Permission_Assoc).filter(Permmission_Assoc.file_id == subcontent.id).delete()
+			permdb.commit()
+
+
 
 ##
 # readdir(dirname, username, token)
@@ -122,7 +143,12 @@ def readdir(dirid, dirname, username, token):
 
 		# if in the permissions database they have the permission to read
 		if permfile:
-			resp["content"] = directory.content
+			subfilesdir = filedb.query(File).filter(File.parent_id == directory.id)
+			content = []
+			for file in subfilesdir:
+				content.append(file.identifier)
+
+			resp["content"] = content
 			resp["message"] = "success"
 			return resp
 
