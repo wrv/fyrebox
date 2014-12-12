@@ -357,16 +357,8 @@ if __name__ == "__main__":
     main()
 
 def main():
-    #serverConnection()
-    ## register("test4", "test")
-    ## create("testfile4")
-    ## write("testfile", "test")
-    ## read("testfile")
-    ## rename("testfile", "testfile2")
-    ## delete("testfile2")
-    #login("test", "test")
-    #perm("test", "test2", True)
-    pass
+    c = Client()
+    
 
 def print_error(msg):
     "Prints red message with a newline at the end"

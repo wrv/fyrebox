@@ -46,3 +46,7 @@ nosetests.xml
 # ignore databases
 *.db
 .DS_Store
+
+
+# random files
+Server/events.log
