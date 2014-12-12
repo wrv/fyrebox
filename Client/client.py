@@ -20,15 +20,6 @@ from settings import CLIENT_DEBUG as DEBUG
 FILE_DIR = os.path.dirname(os.path.realpath(__file__))
 Session = sessionmaker(bind=engine)
 session = Session()
-openFiles = []
-fs_sslSocket = None
-cs_sslSocket = None
-token = None
-current_directory = None
-username = None
-password_hash = None
-private_key = None
-
 
 class Client(object):
     """
@@ -59,7 +50,7 @@ class Client(object):
 
         #other
         self.current_directory = None
-
+        self.root_directory = None
         # connect to servers
         self.serverConnection()
 
@@ -104,7 +95,7 @@ class Client(object):
 
     def get_file_key(self, file_name):
         first = session.query(FileInfo).filter_by(file_name=file_name).first()
-        file_key = decrypt(first.file_key, password_hash).decode('hex')
+        file_key = decrypt(first.file_key, self.password_hash).decode('hex')
         return file_key
 
 
@@ -145,13 +136,13 @@ class Client(object):
                     
         message = self.setupMessage("createdir")
         message['dirname'] = enc_dir_name
-        message['parentdir'] = current_directory
+        message['parentdir'] = self.current_directory
 
         response = self.send_and_get(self.fs_sslSocket, message)
         if DEBUG: print response
 
-        unique_id = response['data']['dir_id']
-        encoded_dir_key = encrypt(dir_key.encode('hex'), password_hash)
+        unique_id = response['dirid']
+        encoded_dir_key = encrypt(dir_key.encode('hex'), self.password_hash)
         content_hash = hashlib.sha256("").digest().encode('hex')
         new_dir = FileInfo(file_name = dir_name, unique_id = unique_id, file_key =
     encoded_dir_key, content_hash = content_hash)
@@ -161,13 +152,18 @@ class Client(object):
         return response
 
     def read_dir(self,dir_name):
-        first = session.query(FileInfo).filter_by(file_name = dir_name).first()
-        dir_key = self.get_file_key(dir_name)
-        unique_id = self.get_unique_id(dir_name)
+        if dir_name == self.root_directory:
+            message = self.setupMessage("readdir")
+            message['dirname'] = dir_name
+            message['dirid'] = dir_name
+        else:
+            first = session.query(FileInfo).filter_by(file_name = dir_name).first()
+            dir_key = self.get_file_key(dir_name)
+            unique_id = self.get_unique_id(dir_name)
 
-        message = self.setupMessage("readdir")
-        message['dirname'] = encrypt(dir_name, dir_key)
-        message['dirid'] = unique_id
+            message = self.setupMessage("readdir")
+            message['dirname'] = encrypt(dir_name, dir_key)
+            message['dirid'] = unique_id
                     
         response = self.send_and_get(self.fs_sslSocket, message)
         content = response['content']
@@ -186,12 +182,12 @@ class Client(object):
 
         message = self.setupMessage("create")
         message.update({'filename': enc_file_name,
-                        'dirname': current_directory})
+                        'dirname': self.current_directory})
 
         response = self.send_and_get(self.fs_sslSocket, message)
 
         unique_id = response['fileid']
-        encoded_file_key = encrypt(file_key.encode('hex'), password_hash)
+        encoded_file_key = encrypt(file_key.encode('hex'), self.password_hash)
         content_hash = hashlib.sha256("").digest().encode('hex')
 
         new_file = FileInfo(file_name=file_name,
@@ -307,7 +303,8 @@ class Client(object):
         self.password_hash = hashlib.sha256(password).digest()
         self.token = response['token']
         self.current_directory = response['rootdir']
-        os.chdir(current_directory) # TODO new separate dir for files?
+        self.root_directory = response['rootdir']
+        os.chdir(self.current_directory) # TODO new separate dir for files?
         try:
             self.private_key = RSA.importKey(open('mykey.pem', 'r').read())
         except Exception as e:
@@ -322,7 +319,7 @@ class Client(object):
         self.password_hash = hashlib.sha256(password).digest()
         self.token = response['token']
         self.current_directory = response['rootdir']
-
+        self.root_directory = response['rootdir']
         # create user folder
         os.mkdir(self.current_directory)
         os.chdir(self.current_directory)
@@ -335,7 +332,7 @@ class Client(object):
         pubKey = rKey.publickey().exportKey()
 
         message = {'operation': 'store',
-                'username': username,
+                'username': self.username,
                 'key': pubKey}
 
         response = self.send_and_get(self.cs_sslSocket, message)
@@ -357,14 +354,16 @@ class Client(object):
                 raise ValueError
         return response
 
-if __name__ == "__main__":
-    main()
 
 def main():
     c = Client()
-    
+    c.register("test", "test")
+    c.create("testfile")
+    c.read_dir(c.current_directory) 
 
 def print_error(msg):
     "Prints red message with a newline at the end"
     sys.stderr.write('\033[91m' + msg + '\033[0m \n')
 
+if __name__ == "__main__":
+    main()
