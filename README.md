@@ -7,8 +7,11 @@ FyreBox is an encrypted file system for 6.858.
 ##Installation
 ### Installing required libraries
 Need following packages
+
 libffi-dev
+
 libssl-dev
+
 python-dev
 
 OpenSSL is needed for cryptographic operations: https://www.openssl.org/ 
@@ -28,10 +31,13 @@ If quick-fyrebox doesn't work (we had some issues) do the following in 3
 different shells.
 
 cd Server
+
 python server.py
 
 cd Cloud
+
 python server.py
 
 cd Client
+
 python client.py
