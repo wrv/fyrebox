@@ -81,9 +81,11 @@ def delete(fileid, filename, username, token):
 		permfile = permdb.query(Permission_Assoc).get((user.id, file.id))
 
 		if permfile:
-			if permfile.perm_type: #if they have write permissions
+			if permfile.perm_type: #if they have write permissions delete file and it's permissions
 				filedb.delete(file)
 				filedb.commit()
+				permdb.query(Permission_Assoc).filter(Permmission_Assoc.file_id == file.id).delete()
+				permdb.commit()
 				print "file deleted"
 				return True
 	return False
