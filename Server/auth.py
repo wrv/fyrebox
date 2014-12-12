@@ -53,6 +53,7 @@ def register(username, password):
         return (None, None)
 
     filedb = file_setup()
+    permdb = permission_setup()
 
     #now we add the person and add it to the other database
     salt = unicode(os.urandom(8), errors='replace')
@@ -71,8 +72,10 @@ def register(username, password):
     db.add(newperson)
     filedb.commit()
     db.commit()
-
-
+    
+    newperm = Permission_Assoc(user_id=newperson.id, file_id=newdir.id, perm_type=True)
+    permdb.add(newperm)
+    permdb.commit()
     return (newtoken(db, newperson), rootdir)
 
 def check_token(username, token):

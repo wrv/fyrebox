@@ -180,12 +180,19 @@ class FyreBoxShell(cmd.Cmd):
             return
         try:
             self.client.create_dir(arg)
-            self.print_success("Create successful.")
+            self.print_success("mkdir successful.")
         except:
             if DEBUG: traceback.print_exc()
-            self.print_error("Create failed. Please retry.")
+            self.print_error("mkdir failed. Please retry.")
 
-
+    def do_ls(self, arg):
+        try:
+            files = self.client.read_dir(self.client.current_directory)
+            for x in files:
+                sys.stdout.write(x +'\n')
+        except:
+            traceback.print_exc()
+            self.print_error("ls failed. Please retry.")
     #----- util functions -----
     def prompt_get(self, param):
         data = None

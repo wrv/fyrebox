@@ -139,7 +139,7 @@ class Client(object):
         response = self.send_and_get(self.fs_sslSocket, message)
         if DEBUG: print response
 
-        unique_id = response['dirid']
+        unique_id = response['data']['dir_id']
         encoded_dir_key = encrypt(dir_key.encode('hex'), self.password_hash)
         content_hash = hashlib.sha256("").digest().encode('hex')
         new_dir = FileInfo(file_name = dir_name, unique_id = unique_id, file_key =
@@ -165,8 +165,8 @@ class Client(object):
                     
         response = self.send_and_get(self.fs_sslSocket, message)
         content = response['content']
-        content = content.split()
         file_list = []
+        print content
         for element in content:
             first = session.query(FileInfo).filter_by(unique_id = element).first()
             file_list.append(first.file_name)
@@ -357,7 +357,9 @@ def main():
     c = Client()
     c.register("test", "test")
     c.create("testfile")
-    c.read_dir(c.current_directory) 
+    c.create("testfile2")
+    c.create("testfile3")
+    print c.read_dir(c.current_directory) 
 
 def print_error(msg):
     "Prints red message with a newline at the end"
