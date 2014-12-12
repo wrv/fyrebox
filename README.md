@@ -6,6 +6,11 @@ FyreBox is an encrypted file system for 6.858.
 
 ##Installation
 ### Installing required libraries
+Need following packages
+libffi-dev
+libssl-dev
+python-dev
+
 OpenSSL is needed for cryptographic operations: https://www.openssl.org/ 
 TwistedMatrix is used on the server side for handling multiple clients and SSL http://twistedmatrix.com/trac/
 
