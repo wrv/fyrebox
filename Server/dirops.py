@@ -167,7 +167,7 @@ def renamedir(dirid, dirname, username, token):
 # permdir(dirname, perms, username, token)
 #
 # dirname - the encrypted name of the dir we want to change permissions on
-# perms - (bolean value, other username)
+# perms - (bolean value, other username, key)
 # username - username of the person
 # token - the token of the person
 #
@@ -192,7 +192,7 @@ def permdir(dirid, dirname, perms, username, token):
 	permdb = permission_setup()
 	if directory:
 		if directory.owner_id == owner.id:
-			permission = Permission_Assoc(user_id=other_user.id, file_id=directory.id, perm_type=perms[0])
+			permission = Permission_Assoc(user_id=other_user.id, file_id=directory.id, perm_type=perms[0], key=perms[2])
 			permdb.add(permission)
 			permdb.commit()
 			resp["message"] = "success"

@@ -206,7 +206,7 @@ def rename(fileid, newfilename, username, token):
 # perm(filename, perms, username, token)
 #
 # filename - the encrypted name of the file we want to change permissions to
-# perms - (bolean value, other username)
+# perms - (bolean value, other username, key)
 # username - username of the person
 # token - the token of the person
 #
@@ -231,7 +231,7 @@ def perm(fileid, filename, perms, username, token):
 	permdb = permission_setup()
 	if file:
 		if file.owner_id == owner.id:
-			permission = Permission_Assoc(user_id=other_user.id, file_id=file.id, perm_type=perms[0])
+			permission = Permission_Assoc(user_id=other_user.id, file_id=file.id, perm_type=perms[0], key=perms[2])
 			permdb.add(permission)
 			permdb.commit()
 			resp["message"] = "success"
