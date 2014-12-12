@@ -244,7 +244,8 @@ class FileServer(LineReceiver):
                 return
 
             if "createdir" == op:
-                output = dirops.createdir(dirname, username, token)
+                parent_dir = parsedjson['parentdir']
+                output = dirops.createdir(dirname, parent_dir, username, token)
                 if output:
                     log(curfile, "successfully created directory for user " + username)
                     self.sendLine(json.dumps(output))
@@ -268,10 +269,10 @@ class FileServer(LineReceiver):
                     return
 
             elif "readdir" == op:
-                content = dirops.readdir(dirid, dirname, username, token)
-                if content:
+                output = dirops.readdir(dirid, dirname, username, token)
+                if output:
                     log(curfile, "successfully read dirid " + dirid + " for user " + username)
-                    self.sendLine(json.dumps(content))
+                    self.sendLine(json.dumps(output))
                     return
 
             elif "renamedir" == op:
@@ -312,6 +313,7 @@ logger.main()
 certData = getModule(__name__).filePath.sibling('server.pem').getContent()
 certificate = ssl.PrivateCertificate.loadPEM(certData)
 reactor.listenSSL(10023, FileServerFactory(), certificate.options())
+
 intro = """
                                                                                                 
 ;kkkkkkkk,  okk.    dkk .kkkkkkkkkkkkc  ckkkkkkkk..WWWWWWWWWWW:   lWWWWWWWWWWWl  0WW.    KWN     

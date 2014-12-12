@@ -60,7 +60,29 @@ encoded_file_key, content_hash = content_hash)
     session.commit()    
     
     return response
+def create_dir(dir_name):
+    dir_key = os.urandom(32)
+    enc_dir_name = encrypt(dir_name, dir_key)
 
+    message = setupMessage("createdir")
+    message['dirname'] = enc_dir_name
+    message['parentdir'] = current_directory
+
+    sslSocket.write(json.dumps(message))
+    response = json.loads(sslSocket.read())
+
+    if 'message' in response:
+        if response['message'] == 'failure':
+            raise ValueError
+
+    unique_id = response['dirid']
+    encoded_dir_key = encrypt(dir_key.encode('hex'), password_hash)
+    content_hash = hashlib.sha256("").digest().encode('hex')
+    new_dir = FileInfo(file_name = dir_name, unique_id = unique_id, file_key =
+encoded_dir_key, content_hash = content_hash)
+    session.add(new_dir)
+    session.commit()
+    return enc_dir_name
 def write(file_name, content):
     first = session.query(FileInfo).filter_by(file_name = file_name).first()
     
@@ -104,7 +126,29 @@ def read(file_name):
         print "SOMEONE HAS TAMPERED WITH THIS FILE"
         raise ValueError
     return response
+def read_dir(dir_name):
+    first = session.query(FileInfo).filter_by(file_name = dir_name).first()
+    dir_key = get_file_key(dir_name)
+    unique_id = get_unique_id(dir_name)
 
+    message = setupMessage("readdir")
+    message['dirname'] = encrypt(dir_name, dir_key)
+    message['dirid'] = unique_id
+
+    sslSocket.write(json.dumps(message))
+    response = json.loads(sslSocket.read())
+    if 'message' in response:
+        if response['message'] == 'failure':
+            raise ValueError
+    content = response['content']
+    content = content.split()
+    file_list = []
+    for element in content:
+        first = session.query(FileInfo).filter_by(unique_id = element).first()
+        file_list.append(first.file_name)
+    file_list.sort()
+        
+    return file_list
 def rename(old_file_name, new_file_name):
     first = session.query(FileInfo).filter_by(file_name = old_file_name).first()
 
@@ -179,15 +223,20 @@ def get_unique_id(file_name):
     unique_id = first.unique_id
     return unique_id
 def main():
+    global current_directory
     serverConnection()
-    #register("test4", "test")
+    register("test", "test")
+    dirid = create_dir("testdir")
+    current_directory = dirid
+    create("testfile")
+    print read_dir("testdir")
     #create("testfile4")
     #write("testfile", "test")
     #read("testfile")
     #rename("testfile", "testfile2")
     #delete("testfile2")
-    login("test", "test")
-    perm("test", "test2", True)
+    #login("test", "test")
+    #perm("test", "test2", True)
 def serverConnection():
     global sslSocket
     global cloud_ssl_sock
