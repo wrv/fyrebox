@@ -137,6 +137,7 @@ class Client(object):
         message['parentdir'] = self.current_directory
 
         response = self.send_and_get(self.fs_sslSocket, message)
+        if DEBUG: print response
 
         unique_id = response['dirid']
         encoded_dir_key = encrypt(dir_key.encode('hex'), self.password_hash)

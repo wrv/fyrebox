@@ -35,7 +35,7 @@ def createdir(dirname, parentdir, username, token):
 		parent_id = 0
 
 	#generate the dir_id from various variables
-	dir_id = hashlib.sha256(username + token + dirname + parentdir + str(time.time())+ str(random.random())).hexdigest()
+	dir_id = hashlib.sha256(str(username) + str(token) + str(dirname) + str(parentdir) + str(time.time())+ str(random.random())).hexdigest()
 	#create the directory
 	newdir = File(identifier=dir_id, filename=dirname, parent_id=parent_id, owner_id=user.id, content="", directory=True)
 	filedb.add(newdir)
