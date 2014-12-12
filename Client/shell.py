@@ -3,7 +3,9 @@ import cmd
 import sys
 import getpass
 import traceback
-from client import login, register, serverConnection, create, write, read, delete, rename
+from client import Client
+from settings import CLIENT_DEBUG as DEBUG
+
 
 class FyreBoxShell(cmd.Cmd):
     intro = """
@@ -31,10 +33,13 @@ class FyreBoxShell(cmd.Cmd):
     def __init__(self, *args, **kwargs):
         cmd.Cmd.__init__(self,*args, **kwargs)
         try:
-            serverConnection()
-        except:
+            self.client = Client()
+        except Exception as e:
+            if DEBUG:
+                print e
             self.print_error(
                     "Sorry. Failed to connect to server."
+                    "" + str(e)
                     )
             sys.exit(1)
 
@@ -46,7 +51,7 @@ class FyreBoxShell(cmd.Cmd):
                     "least %d charachters long" % (self.MIN_FILENAME_LEN))
             return
         try:
-            create(arg)
+            self.client.create(arg)
             self.print_success("Create successful.")
         except:
             traceback.print_exc()
@@ -63,9 +68,11 @@ class FyreBoxShell(cmd.Cmd):
             self.print_error("ERROR. Usage RM <filename>. Make sure filename is at least %d charachters long" % (self.MIN_FILENAME_LEN))
             return
         try:
-            delete(arg)
+            self.client.delete(arg)
             self.print_success("Rm successful.")
-        except:
+        except Exception as e:
+            if DEBUG:
+                print e
             self.print_error("Rm failed. Please retry.")
         
     def do_perm(self, arg):
@@ -76,7 +83,7 @@ class FyreBoxShell(cmd.Cmd):
         'Rename a file: RENAME'
         new_file_name = self.prompt_get('file_name')
         try:
-            rename(old_file_name.strip(), new_file_name.strip())
+            self.client.rename(old_file_name.strip(), new_file_name.strip())
             self.print_success("Rename successful.")
         except:
             self.print_error("Rename failed. Please retry.") 
@@ -91,7 +98,7 @@ class FyreBoxShell(cmd.Cmd):
         filename = filename.strip()
         content = self.prompt_get('content')
         try:
-            write(filename, content)
+            self.client.write(filename, content)
             self.print_success("Content successfully written.")
         except:
             traceback.print_exc()
@@ -107,7 +114,7 @@ class FyreBoxShell(cmd.Cmd):
             return
         filename = filename.strip()
         try:
-            results = read(filename)
+            results = self.client.read(filename)
             self.print_success( "CONTENT : \n"
                                 "============"
                     )
@@ -129,15 +136,17 @@ class FyreBoxShell(cmd.Cmd):
         username = username.strip()
         password = self.prompt_get_password()
 
-        #try:
-        register(username, password)
-        self.print_success('User with username: ' + username + ""
-            " successfully registered. ")
-        # registration automatically logs in
-        self.logged_in = True
-        #except Exception as e:
-            ##print e
-            #self.print_error('An error occurred. Please retry')
+        try:
+            self.client.register(username, password)
+            self.print_success('User with username: ' + username + ""
+                " successfully registered. ")
+            # registration automatically logs in
+            self.logged_in = True
+            self.prompt = str(self.client.username) + '@fyrebox> '
+        except Exception as e:
+            if DEBUG:
+                print e
+            self.print_error('An error occurred. Please retry')
 
 
     def do_login(self, username):
@@ -155,10 +164,11 @@ class FyreBoxShell(cmd.Cmd):
         password = self.prompt_get_password()
 
         try:
-            login(username, password)
+            self.client.login(username, password)
             self.print_success('User with username: ' + username + ""
                 " successfully logged in. ")
             self.logged_in = True
+            self.prompt = str(self.client.username) + '@fyrebox> '
         except Exception as e:
             self.print_error('An error occurred. Please retry')
 
