@@ -6,7 +6,7 @@ from twisted.protocols.basic import LineReceiver
 from twisted.internet import reactor, ssl
 from twisted.python.modules import getModule
 
-from settings import SERVER_NAME, SERVER_PORT, SERVER_BACKLOG, DEBUG
+from settings import  CLOUD_SERVER_PORT
 from database import PublicKey, engine
 from sqlalchemy.orm import sessionmaker
 
@@ -178,5 +178,5 @@ class FileServerFactory(Factory):
 certData = getModule(__name__).filePath.sibling('server.pem').getContent()
 certificate = ssl.PrivateCertificate.loadPEM(certData)
 
-reactor.listenSSL(SERVER_PORT, FileServerFactory(), certificate.options())
+reactor.listenSSL(CLOUD_SERVER_PORT, FileServerFactory(), certificate.options())
 reactor.run()

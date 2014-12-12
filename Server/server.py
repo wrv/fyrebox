@@ -5,6 +5,8 @@ from twisted.protocols.basic import LineReceiver
 from twisted.internet import reactor, ssl
 from twisted.python.modules import getModule
 
+from settings import  FILE_SERVER_PORT
+
 from auth import login, register
 import fileops
 import dirops
@@ -263,5 +265,5 @@ class FileServerFactory(Factory):
 ##Main code
 certData = getModule(__name__).filePath.sibling('server.pem').getContent()
 certificate = ssl.PrivateCertificate.loadPEM(certData)
-reactor.listenSSL(10023, FileServerFactory(), certificate.options())
+reactor.listenSSL(FILE_SERVER_PORT, FileServerFactory(), certificate.options())
 reactor.run()
