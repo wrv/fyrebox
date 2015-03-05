@@ -25,7 +25,7 @@ them using pip, run:
 ####Quick run
 From the root directory, just run
 
-    ./quick-fyrebox
+    ./quick_fyrebox
 ###Long run
 If quick-fyrebox doesn't work (we had some issues) do the following in 3
 different shells.
