@@ -41,4 +41,5 @@ python server.py
 cd Client
 
 python client.py
+
 python shell.py
